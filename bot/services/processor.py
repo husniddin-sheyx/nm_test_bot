@@ -13,22 +13,24 @@ class Processor:
         Returns the modified list of blocks.
         """
         if action == BUTTONS["user"]["shuffle"]:
-            return self._shuffle()
+            return self._shuffle(shuffle_questions=True)
+        elif action == BUTTONS["user"]["shuffle_answers"]:
+            return self._shuffle(shuffle_questions=False)
         elif action == BUTTONS["user"]["extract"]:
             return self._extract_correct()
         return self.blocks
 
-    def _shuffle(self) -> List[QuestionBlock]:
+    def _shuffle(self, shuffle_questions: bool = True) -> List[QuestionBlock]:
         """
-        1. Shuffle questions order.
+        1. Shuffle questions order (Optional).
         2. Shuffle answers within each question.
-        3. Renumber questions (optional but good for clean output).
         """
-        shuffled_questions = self.blocks.copy()
-        random.shuffle(shuffled_questions)
-        
-        # Don't change IDs here if we want to track original, but for output usually we renumber.
-        # Let's keep original objects but their order changes.
+        if shuffle_questions:
+            shuffled_questions = self.blocks.copy()
+            random.shuffle(shuffled_questions)
+        else:
+            # Keep original question order
+            shuffled_questions = self.blocks.copy()
         
         for q in shuffled_questions:
             # Create a copy of answers to shuffle

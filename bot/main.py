@@ -2,8 +2,8 @@ import asyncio
 import logging
 import sys
 from aiogram import Bot, Dispatcher
-from config import BOT_TOKEN
-from handlers import main_router
+from bot.config import BOT_TOKEN
+from bot.handlers import main_router
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
@@ -14,6 +14,10 @@ async def main():
 
     # Include the main router which holds all sub-routers
     dp.include_router(main_router)
+    
+    # Set Bot Commands Menu
+    from bot.keyboards.main_menu import set_main_menu
+    await set_main_menu(bot)
 
     try:
         logging.info("Bot starting with Modular Architecture...")

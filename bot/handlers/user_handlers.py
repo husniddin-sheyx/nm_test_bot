@@ -6,10 +6,14 @@ from aiogram.fsm.context import FSMContext
 
 from bot.config import TEMP_DIR
 from bot.utils.lexicon import USER_TEXTS
-from bot.keyboards.user_kb import get_main_keyboard
+from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
 from bot.states import ValidatedFileState
+from aiogram.types import FSInputFile
+from bot.services.processor import Processor
+from bot.services.generator import DocxGenerator
+from bot.utils.lexicon import BUTTONS
 
 # Module-specific router
 user_router = Router()
@@ -18,7 +22,16 @@ MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
 @user_router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer(USER_TEXTS["welcome"])
+    await message.answer(
+        USER_TEXTS["welcome"],
+        reply_markup=get_start_keyboard()
+    )
+
+from aiogram.filters import Command
+@user_router.message(Command(commands=["help"]))
+@user_router.message(F.text == BUTTONS["user"]["instructions_btn"])
+async def cmd_instructions(message: Message):
+    await message.answer(USER_TEXTS["instructions"])
 
 @user_router.message(F.document)
 async def handle_document(message: Message, bot: Bot, state: FSMContext):
@@ -75,10 +88,10 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
         )
 
 
-from aiogram.types import FSInputFile
-from bot.services.processor import Processor
-from bot.services.generator import DocxGenerator
-from bot.utils.lexicon import BUTTONS
+
+
+    except Exception as e:
+        await message.answer(USER_TEXTS["error"].format(error=str(e)))
 
 @user_router.message(ValidatedFileState.waiting_for_action)
 async def handle_action(message: Message, state: FSMContext):
@@ -91,8 +104,27 @@ async def handle_action(message: Message, state: FSMContext):
         return
 
     text = message.text
-    if text not in [BUTTONS["user"]["shuffle"], BUTTONS["user"]["extract"]]:
+    valid_buttons = [
+        BUTTONS["user"]["shuffle"], 
+        BUTTONS["user"]["shuffle_answers"], 
+        BUTTONS["user"]["extract"],
+        BUTTONS["user"]["back"]
+    ]
+    
+    if text not in valid_buttons:
         await message.answer("Iltimos, tugmalardan birini tanlang.")
+        return
+
+    # Handle Restart/Back
+    if text == BUTTONS["user"]["back"]:
+        await state.clear()
+        await message.answer(USER_TEXTS["welcome"], reply_markup=None)
+        # Cleanup file if needed
+        if file_path and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except:
+                pass
         return
 
     await message.answer("⏳ Tayyorlanmoqda...")

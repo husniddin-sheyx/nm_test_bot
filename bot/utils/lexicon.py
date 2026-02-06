@@ -12,7 +12,12 @@ USER_TEXTS = {
     "success": "✅ **Fayl muvaffaqiyatli saqlandi!**\n"
                "📁 Fayl nomi: `{filename}`\n\n"
                "Endi 2-bosqich (DOCX parser) ga o'tishim mumkin.",
-    "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}"
+    "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}",
+    "instructions": "📖 **Qo'llanma:**\n\n"
+                    "1. Savollar bo'lgan **.docx** faylni tashlang.\n"
+                    "2. Savol va javoblar alohida paragraflarda bo'lsin.\n"
+                    "3. To'g'ri javob oldiga `+`, noto'g'riga `=` qo'ying.\n"
+                    "4. Bot faylni tekshirib, aralashtirish yoki javoblarni ajratib berishni taklif qiladi."
 }
 
 # Admin Interface Texts (Placeholder for future)
@@ -32,11 +37,19 @@ ERROR_TEXTS = {
 # Buttons
 BUTTONS = {
     "user": {
-        "shuffle": "🔀 Aralashtirish",
-        "extract": "➕ Pluslarni olish"
+        "shuffle": "🔀 To'liq Aralashtirish",
+        "shuffle_answers": "🔀 Faqat javoblar",
+        "extract": "➕ Pluslarni olish",
+        "back": "🔙 Boshiga qaytish",
+        "instructions_btn": "📚 Qo'llanma"
     },
     "admin": {
         "stats": "📊 Statistika",
         "settings": "⚙️ Sozlamalar"
     }
+}
+
+COMMANDS_MENU = {
+    "start": "♻️ Botni ishga tushirish",
+    "help": "❓ Yordam va Qo'llanma"
 }
