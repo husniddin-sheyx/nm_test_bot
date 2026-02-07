@@ -22,7 +22,7 @@ async def cmd_check_id(message: Message):
         f"🔍 **Diagnostika:**\n"
         f"Sizning ID: `{message.from_user.id}`\n"
         f"Adminlar ro'yxati: `{ADMIN_IDS}`\n"
-        f"Adminmisiz?: **{'Ha' if is_admin else 'Yo'q'}**",
+        f"Adminmisiz?: **{'Ha' if is_admin else \"Yo'q\"}**",
         parse_mode="Markdown"
     )
 
