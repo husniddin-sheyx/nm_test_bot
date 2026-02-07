@@ -1,0 +1,14 @@
+[Unit]
+Description=Telegram Bot - Docx Helper
+After=network.target
+
+[Service]
+User=root
+WorkingDirectory=/root/nm_test_bot
+ExecStart=/root/nm_test_bot/venv/bin/python -m bot.main
+Restart=always
+RestartSec=5
+EnvironmentFile=/root/nm_test_bot/.env
+
+[Install]
+WantedBy=multi-user.target
