@@ -1,44 +1,41 @@
 import os
 from aiogram import Router, F, Bot
-from aiogram.types import Message
-from aiogram.filters import CommandStart
+from aiogram.types import Message, FSInputFile
+from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
 from bot.config import TEMP_DIR
-from bot.utils.lexicon import USER_TEXTS
+from bot.utils.lexicon import USER_TEXTS, BUTTONS
 from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
 from bot.states import ValidatedFileState
-from aiogram.types import FSInputFile
 from bot.services.processor import Processor
 from bot.services.generator import DocxGenerator
-from bot.utils.lexicon import BUTTONS
-from bot.services.database import add_user # NEW IMPORT
+from bot.services.database import add_user
 
 # Module-specific router
-router = Router() # Changed user_router to router
+router = Router()
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
-@router.message(Command("start")) # Changed CommandStart() to Command("start") and user_router to router
-async def cmd_start(message: Message, state: FSMContext): # Added state: FSMContext
-    await state.clear() # NEW LINE
-    
+@router.message(CommandStart())
+async def cmd_start(message: Message, state: FSMContext):
+    await state.clear()
     # Foydalanuvchini bazaga qo'shish
-    add_user(message.from_user.id, message.from_user.full_name, message.from_user.username) # NEW LINE
+    add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
     
     await message.answer(
-        text=LEXICON["start"], # Changed USER_TEXTS["welcome"] to text=LEXICON["start"]
+        USER_TEXTS["welcome"],
         reply_markup=get_start_keyboard()
     )
 
-@router.message(Command(commands=["help"])) # Changed user_router to router
+@router.message(Command("help"))
 @router.message(F.text == BUTTONS["user"]["instructions_btn"])
 async def cmd_instructions(message: Message):
     await message.answer(USER_TEXTS["instructions"])
 
-@user_router.message(F.document)
+@router.message(F.document)
 async def handle_document(message: Message, bot: Bot, state: FSMContext):
     document = message.document
 
@@ -83,7 +80,6 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             return
 
         # 6. Success -> Set State and Show Keyboard
-        # We store the file path in state data to use it later
         await state.update_data(file_path=file_path)
         await state.set_state(ValidatedFileState.waiting_for_action)
 
@@ -92,13 +88,10 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             reply_markup=get_main_keyboard()
         )
 
-
-
-
     except Exception as e:
         await message.answer(USER_TEXTS["error"].format(error=str(e)))
 
-@user_router.message(ValidatedFileState.waiting_for_action)
+@router.message(ValidatedFileState.waiting_for_action)
 async def handle_action(message: Message, state: FSMContext):
     data = await state.get_data()
     file_path = data.get("file_path")
@@ -123,7 +116,7 @@ async def handle_action(message: Message, state: FSMContext):
     # Handle Restart/Back
     if text == BUTTONS["user"]["back"]:
         await state.clear()
-        await message.answer(USER_TEXTS["welcome"], reply_markup=None)
+        await message.answer(USER_TEXTS["welcome"], reply_markup=get_start_keyboard())
         # Cleanup file if needed
         if file_path and os.path.exists(file_path):
             try:
@@ -135,8 +128,7 @@ async def handle_action(message: Message, state: FSMContext):
     await message.answer("⏳ Tayyorlanmoqda...")
 
     try:
-        # 1. Parse again (safe approach to get fresh blocks)
-        # Optimization: We could pickle blocks, but parsing is fast enough for <100 pages
+        # 1. Parse again
         parser = DocxParser(file_path)
         blocks, _ = parser.parse()
         
@@ -160,10 +152,6 @@ async def handle_action(message: Message, state: FSMContext):
         await message.answer_document(doc_file, caption=caption)
         
         # 5. Cleanup New File
-        # Original file is kept until state is cleared? 
-        # Requirement says "Return File & Cleanup". 
-        # Maybe we allow multiple actions on same file? 
-        # Let's keep state for now so user can click other button too.
         os.remove(output_path)
         
     except Exception as e:
