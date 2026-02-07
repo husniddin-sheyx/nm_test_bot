@@ -5,5 +5,6 @@ from bot.handlers.admin_handlers import admin_router
 # Main router that aggregates all other routers
 main_router = Router()
 
-main_router.include_router(user_router)
+# Admin router birinchi bo'lishi kerak (user router state-larni ushlab qolmasligi uchun)
 main_router.include_router(admin_router)
+main_router.include_router(user_router)
