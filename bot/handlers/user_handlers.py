@@ -14,22 +14,27 @@ from aiogram.types import FSInputFile
 from bot.services.processor import Processor
 from bot.services.generator import DocxGenerator
 from bot.utils.lexicon import BUTTONS
+from bot.services.database import add_user # NEW IMPORT
 
 # Module-specific router
-user_router = Router()
+router = Router() # Changed user_router to router
 
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
-@user_router.message(CommandStart())
-async def cmd_start(message: Message):
+@router.message(Command("start")) # Changed CommandStart() to Command("start") and user_router to router
+async def cmd_start(message: Message, state: FSMContext): # Added state: FSMContext
+    await state.clear() # NEW LINE
+    
+    # Foydalanuvchini bazaga qo'shish
+    add_user(message.from_user.id, message.from_user.full_name, message.from_user.username) # NEW LINE
+    
     await message.answer(
-        USER_TEXTS["welcome"],
+        text=LEXICON["start"], # Changed USER_TEXTS["welcome"] to text=LEXICON["start"]
         reply_markup=get_start_keyboard()
     )
 
-from aiogram.filters import Command
-@user_router.message(Command(commands=["help"]))
-@user_router.message(F.text == BUTTONS["user"]["instructions_btn"])
+@router.message(Command(commands=["help"])) # Changed user_router to router
+@router.message(F.text == BUTTONS["user"]["instructions_btn"])
 async def cmd_instructions(message: Message):
     await message.answer(USER_TEXTS["instructions"])
 

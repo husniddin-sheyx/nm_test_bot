@@ -4,11 +4,14 @@ import sys
 from aiogram import Bot, Dispatcher
 from bot.config import BOT_TOKEN
 from bot.handlers import main_router
+from bot.keyboards.main_menu import set_main_menu
+from bot.services.database import init_db
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
 async def main():
+    init_db()
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
