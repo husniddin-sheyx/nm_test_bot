@@ -14,15 +14,27 @@ admin_router.message.filter(AdminFilter())
 class BroadcastState(StatesGroup):
     waiting_for_message = State()
 
+@admin_router.message(Command("check"))
+async def cmd_check_id(message: Message):
+    from bot.config import ADMIN_IDS
+    is_admin = message.from_user.id in ADMIN_IDS
+    await message.answer(
+        f"🔍 **Diagnostika:**\n"
+        f"Sizning ID: `{message.from_user.id}`\n"
+        f"Adminlar ro'yxati: `{ADMIN_IDS}`\n"
+        f"Adminmisiz?: **{'Ha' if is_admin else 'Yo'q'}**",
+        parse_mode="Markdown"
+    )
+
 @admin_router.message(Command("admin"))
 async def cmd_admin(message: Message):
     count = get_users_count()
     text = (
-        f"👨‍💻 **Admin Panel**\n\n"
+        f"👨‍💻 **Admin Panel (V3.1)**\n\n"
         f"👥 Foydalanuvchilar soni: **{count}** ta\n\n"
         f"Xabar yuborish uchun: /broadcast"
     )
-    await message.answer(text)
+    await message.answer(text, parse_mode="Markdown")
 
 @admin_router.message(Command("broadcast"))
 async def cmd_broadcast(message: Message, state: FSMContext):

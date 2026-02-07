@@ -26,8 +26,9 @@ async def cmd_start(message: Message, state: FSMContext):
     add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
     
     await message.answer(
-        USER_TEXTS["welcome"],
-        reply_markup=get_start_keyboard()
+        USER_TEXTS["welcome"] + "\n\n*(Sizning ID raqamingiz: `" + str(message.from_user.id) + "`)*",
+        reply_markup=get_start_keyboard(),
+        parse_mode="Markdown"
     )
 
 @router.message(Command("help"))
