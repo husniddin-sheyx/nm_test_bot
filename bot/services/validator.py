@@ -14,12 +14,16 @@ class Validator:
             errors.append(ERROR_TEXTS["no_questions"])
             return errors
 
+        # To track duplicate questions
+        question_texts = {} # text -> first_id
+        
         for q in blocks:
-            # 1. Answer Count Check
+            # --- 1. Basic Structure Validation ---
+            # Answer Count Check
             if len(q.answers) < 2:
                 errors.append(ERROR_TEXTS["few_answers"].format(id=q.id))
             
-            # 2. Correct Answer Check (+)
+            # Correct Answer Check (+)
             correct_count = sum(1 for a in q.answers if a.is_correct)
             
             if correct_count == 0:
@@ -27,17 +31,39 @@ class Validator:
             elif correct_count > 1:
                 errors.append(ERROR_TEXTS["multiple_plus"].format(id=q.id, count=correct_count))
             
-            # 3. Image/Formula Orphan Check
-            # Note: The parser logic already forces all content into Q or A blocks.
-            # However, if we wanted to detect "Image without text", we could check here.
-            # For now, strict structure validation is covered by the Parser's logic 
-            # (it wouldn't create a block if it couldn't attach it, or it would attach it to Q context).
+            # --- 2. Duplicate Detection (New Features) ---
             
-            # We can check if a Question is EMPTY (no text, no image?)
-            has_content = any(p.text.strip() for p in q.question_paragraphs)
-            # If no text, strictly speaking it might be just an image. If image exists, it's valid.
-            # Since we store 'paragraphs', we assume if list is not empty, it has content.
-            # But we should check if they are ALL empty text and NO images (hard to check images without inspecting XML deeply).
-            # For now, assume if paragraphs exist, it's consistent.
+            # 2.1 Duplicate Question Check
+            q_text = "".join(p.text for p in q.question_paragraphs).strip()
+            if q_text:
+                if q_text in question_texts:
+                    errors.append(ERROR_TEXTS["duplicate_question"].format(
+                        id=q.id, 
+                        first_id=question_texts[q_text]
+                    ))
+                else:
+                    question_texts[q_text] = q.id
+
+            # 2.2 Duplicate Answer Check (within this question)
+            answer_texts = []
+            seen_answers = set()
+            duplicates_in_q = set()
+            
+            for ans in q.answers:
+                ans_text = "".join(p.text for p in ans.original_paragraphs).strip()
+                # Remove markers from start for comparison
+                if ans_text.startswith("+") or ans_text.startswith("="):
+                    ans_text = ans_text[1:].strip()
+                
+                if ans_text in seen_answers:
+                    duplicates_in_q.add(f"`{ans_text[:30]}...`" if len(ans_text) > 30 else f"`{ans_text}`")
+                else:
+                    seen_answers.add(ans_text)
+            
+            if duplicates_in_q:
+                errors.append(ERROR_TEXTS["duplicate_answer"].format(
+                    id=q.id,
+                    dupes=", ".join(duplicates_in_q)
+                ))
 
         return errors

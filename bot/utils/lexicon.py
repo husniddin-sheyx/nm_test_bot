@@ -31,7 +31,9 @@ ERROR_TEXTS = {
     "missing_plus": "❗ {id}-savol: To'g'ri javob (+) belgilanmagan.",
     "multiple_plus": "❗ {id}-savol: {count} ta to'g'ri javob (+) belgilangan (faqat 1 ta bo'lishi kerak).",
     "few_answers": "❗ {id}-savol: Javoblar soni kam (kamida 2 ta bo'lishi kerak).",
-    "orphan_image": "❗ {id}-qator: Rasm yoki formula savolga tegishli emas (context yo'q)."
+    "orphan_image": "❗ {id}-qator: Rasm yoki formula savolga tegishli emas (context yo'q).",
+    "duplicate_question": "⚠️ {id}-savol: Bu savol matni avvalroq ({first_id}-savol) ham ishlatilgan. (Takroriy savol)",
+    "duplicate_answer": "⚠️ {id}-savol: Quyidagi javoblar bir xil: {dupes}"
 }
 
 # Buttons
