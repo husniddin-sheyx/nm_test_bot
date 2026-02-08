@@ -81,7 +81,7 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             return
 
         # 6. Success -> Set State and Show Keyboard
-        await state.update_data(file_path=file_path)
+        await state.update_data(file_path=file_path, original_filename=document.file_name)
         await state.set_state(ValidatedFileState.waiting_for_action)
 
         await message.answer(
@@ -138,14 +138,23 @@ async def handle_action(message: Message, state: FSMContext):
         processed_blocks = processor.process(text)
         
         # 3. Generate New File
-        output_filename = f"gen_{message.from_user.id}_{os.path.basename(file_path)}"
-        output_path = os.path.join(TEMP_DIR, output_filename)
+        orig_name = data.get("original_filename", "result.docx")
+        name, ext = os.path.splitext(orig_name)
+        
+        suffix = "_aralashtirilgan"
+        if text == BUTTONS["user"]["shuffle_answers"]:
+            suffix = "_javoblar_aralash"
+        elif text == BUTTONS["user"]["extract"]:
+            suffix = "_pluslar"
+            
+        new_filename = f"{name}{suffix}{ext}"
+        output_path = os.path.join(TEMP_DIR, f"gen_{message.from_user.id}_{new_filename}")
         
         generator = DocxGenerator(file_path)
         generator.generate(processed_blocks, output_path)
         
         # 4. Send File
-        doc_file = FSInputFile(output_path)
+        doc_file = FSInputFile(output_path, filename=new_filename)
         caption = "✅ Marhamat, tayyor fayl!"
         if text == BUTTONS["user"]["extract"]:
             caption += " (Faqat to'g'ri javoblar)"
