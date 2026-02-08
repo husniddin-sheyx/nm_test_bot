@@ -18,11 +18,12 @@ class BroadcastState(StatesGroup):
 async def cmd_check_id(message: Message):
     from bot.config import ADMIN_IDS
     is_admin = message.from_user.id in ADMIN_IDS
+    admin_status = "Ha" if is_admin else "Yo'q"
     await message.answer(
         f"🔍 **Diagnostika:**\n"
         f"Sizning ID: `{message.from_user.id}`\n"
         f"Adminlar ro'yxati: `{ADMIN_IDS}`\n"
-        f"Adminmisiz?: **{'Ha' if is_admin else \"Yo'q\"}**",
+        f"Adminmisiz?: **{admin_status}**",
         parse_mode="Markdown"
     )
 
