@@ -19,7 +19,6 @@ async def main():
     dp.include_router(main_router)
     
     # Set Bot Commands Menu
-    from bot.keyboards.main_menu import set_main_menu
     await set_main_menu(bot)
 
     try:
