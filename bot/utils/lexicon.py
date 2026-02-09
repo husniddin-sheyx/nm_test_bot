@@ -43,7 +43,8 @@ BUTTONS = {
         "shuffle_answers": "🔀 Faqat javoblar",
         "extract": "➕ Pluslarni olish",
         "back": "🔙 Boshiga qaytish",
-        "instructions_btn": "📚 Qo'llanma"
+        "instructions_btn": "📚 Qo'llanma",
+        "settings_btn": "⚙️ Sozlamalar"
     },
     "admin": {
         "stats": "📊 Statistika",

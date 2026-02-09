@@ -1,18 +1,19 @@
 import os
 from aiogram import Router, F, Bot
-from aiogram.types import Message, FSInputFile
+from aiogram.types import Message, FSInputFile, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
 from bot.config import TEMP_DIR
 from bot.utils.lexicon import USER_TEXTS, BUTTONS
-from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard
+from bot.services.database import add_user, update_last_active, get_user_setting, update_user_setting
+from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard, get_settings_keyboard
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
 from bot.states import ValidatedFileState
 from bot.services.processor import Processor
 from bot.services.generator import DocxGenerator
-from bot.services.database import add_user
+from bot.services.database import add_user, update_last_active
 
 # Module-specific router
 router = Router()
@@ -36,6 +37,26 @@ async def cmd_start(message: Message, state: FSMContext):
 async def cmd_instructions(message: Message):
     await message.answer(USER_TEXTS["instructions"])
 
+@router.message(F.text == BUTTONS["user"]["settings_btn"])
+async def handle_settings(message: Message):
+    mode = get_user_setting(message.from_user.id, "default_shuffle", "shuffle")
+    await message.answer(
+        "⚙️ **Sozlamalar**\n\n"
+        "Bu yerda siz botning ishlash usulini o'zingizga moslab olishingiz mumkin.\n"
+        f"Hozirgi standart usul: **{mode}**",
+        reply_markup=get_settings_keyboard(mode),
+        parse_mode="Markdown"
+    )
+
+@router.callback_query(F.data.startswith("set_mode_"))
+async def process_settings_update(callback: CallbackQuery):
+    new_mode = callback.data.replace("set_mode_", "")
+    update_user_setting(callback.from_user.id, "default_shuffle", new_mode)
+    
+    await callback.answer(f"✅ Standart usul {new_mode} ga o'zgartirildi.")
+    # Refresh keyboard
+    await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(new_mode))
+
 @router.message(F.document)
 async def handle_document(message: Message, bot: Bot, state: FSMContext):
     document = message.document
@@ -53,6 +74,9 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
     await message.answer(USER_TEXTS["processing"])
 
     try:
+        # Update last active on every file upload
+        update_last_active(message.from_user.id)
+        
         # 3. Download file
         file_path = os.path.join(TEMP_DIR, f"{message.from_user.id}_{document.file_name}")
         await bot.download(document, destination=file_path)
@@ -68,11 +92,31 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
         all_errors = errors + val_errors
         
         if all_errors:
-            # Show top 10 errors
+            # Show top 10 errors to user
             error_msg = "❌ **Faylda quyidagi xatolar topildi:**\n\n" + "\n".join(all_errors[:10])
             if len(all_errors) > 10:
                 error_msg += f"\n\n... va yana {len(all_errors)-10} ta xato."
             await message.answer(error_msg)
+            
+            # --- Admin Alert (Stage 27) ---
+            from bot.config import ADMIN_IDS
+            admin_alert = (
+                f"🚨 **Xatoli fayl yuborildi!**\n\n"
+                f"Foydalanuvchi: {message.from_user.full_name} (@{message.from_user.username})\n"
+                f"ID: `{message.from_user.id}`\n\n"
+                f"**Xatolar:**\n{error_msg}"
+            )
+            for admin_id in ADMIN_IDS:
+                try:
+                    await bot.send_document(
+                        admin_id, 
+                        FSInputFile(file_path), 
+                        caption=admin_alert, 
+                        parse_mode="Markdown"
+                    )
+                except:
+                    pass
+            
             # Cleanup
             try:
                 os.remove(file_path)
@@ -127,6 +171,7 @@ async def handle_action(message: Message, state: FSMContext):
         return
 
     await message.answer("⏳ Tayyorlanmoqda...")
+    update_last_active(message.from_user.id) # Track active button press
 
     try:
         # 1. Parse again
