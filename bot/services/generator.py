@@ -68,8 +68,8 @@ class DocxGenerator:
                 for para in ans.original_paragraphs:
                     self._append_element(body, para._element)
             
-            # Add spacing between questions?
-            # self.doc.add_paragraph("") 
+            # 3. Add spacing between questions (Stage 34)
+            self.doc.add_paragraph("") 
 
         self.doc.save(output_path)
 

@@ -35,6 +35,9 @@ class Validator:
             
             # 2.1 Duplicate Question Check
             q_text = "".join(p.text for p in q.question_paragraphs).strip()
+            if q_text.startswith("?"):
+                q_text = q_text[1:].strip()
+                
             if q_text:
                 if q_text in question_texts:
                     errors.append(ERROR_TEXTS["duplicate_question"].format(
@@ -52,7 +55,7 @@ class Validator:
             for ans in q.answers:
                 ans_text = "".join(p.text for p in ans.original_paragraphs).strip()
                 # Remove markers from start for comparison
-                if ans_text.startswith("+") or ans_text.startswith("="):
+                if ans_text.startswith("+") or ans_text.startswith("=") or ans_text.startswith("-"):
                     ans_text = ans_text[1:].strip()
                 
                 if ans_text in seen_answers:

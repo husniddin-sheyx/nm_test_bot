@@ -10,126 +10,68 @@ class DocxParser:
 
     def parse(self) -> Tuple[List[QuestionBlock], List[str]]:
         """
-        Parses the document into QuestionBlocks.
-        Returns (List[QuestionBlock], List[errors])
+        Parses the document into QuestionBlocks using markers:
+        ? - Question start
+        + - Correct answer
+        - or = - Incorrect answer
         """
         current_q_paragraphs = []
         current_answers = []
-        
-        # Temporary buffer for the current answer being built
         current_ans_paragraphs = []
         current_ans_is_correct = False
-        current_ans_marker_found = False
-
+        
         question_counter = 1
+
+        def save_current_answer():
+            if current_ans_paragraphs:
+                current_answers.append(AnswerBlock(
+                    original_paragraphs=list(current_ans_paragraphs),
+                    is_correct=current_ans_is_correct,
+                    debug_text=current_ans_paragraphs[0].text[:30] if current_ans_paragraphs else ""
+                ))
+                current_ans_paragraphs.clear()
+
+        def save_current_question():
+            nonlocal question_counter
+            save_current_answer()
+            if current_q_paragraphs:
+                self.blocks.append(QuestionBlock(
+                    id=question_counter,
+                    question_paragraphs=list(current_q_paragraphs),
+                    answers=list(current_answers)
+                ))
+                question_counter += 1
+                current_q_paragraphs.clear()
+                current_answers.clear()
 
         for para in self.doc.paragraphs:
             text = para.text.strip()
+            if not text:
+                continue
             
-            # Check for Answer Markers
+            # 1. Identify Markers
+            is_question = text.startswith("?")
             is_plus = text.startswith("+")
-            is_equal = text.startswith("=")
+            is_minus_equal = text.startswith("-") or text.startswith("=")
             
-            if is_plus or is_equal:
-                # --- NEW ANSWER START ---
-                
-                # 1. Save previous answer if exists
-                if current_ans_marker_found:
-                    # We were already building an answer, finish it
-                    current_answers.append(AnswerBlock(
-                        original_paragraphs=current_ans_paragraphs,
-                        is_correct=current_ans_is_correct,
-                        debug_text=current_ans_paragraphs[0].text[:20] if current_ans_paragraphs else ""
-                    ))
-                    current_ans_paragraphs = []
-
-                # 2. Check if we strictly moved from Question -> Answer
-                if not current_answers and current_q_paragraphs:
-                    # First answer for this question.
-                    # Previous paragraphs were the Question.
-                    pass 
-                
-                # 3. Start new answer
-                current_ans_marker_found = True
+            if is_question:
+                save_current_question()
+                current_q_paragraphs.append(para)
+            elif is_plus or is_minus_equal:
+                save_current_answer()
                 current_ans_is_correct = is_plus
-                current_ans_paragraphs = [para] # Add this paragraph (it allows us to keep the marker or remove it later)
-                
+                current_ans_paragraphs.append(para)
             else:
-                # --- NOT A MARKER ---
-                
-                if current_ans_marker_found:
-                    # We are currently inside an answer.
-                    # Is this a continuation of the answer (e.g. formula/image/text on next line)?
-                    # OR is it a NEW Question?
-                    
-                    # Heuristic: If it looks like a new question? 
-                    # The user said: "1 savol = 1 BLOCK". 
-                    # Usually, if we have answers, and then receive non-answer text, it's a New Question.
-                    # BUT, multi-line answers are possible.
-                    # HOWEVER, standard test formats usually have answers as single blocks.
-                    # Let's assume: If we have captured some answers, and we see a paragraph that assumes to be text...
-                    # Strict Mode: If it doesn't start with +/=, it's a new question IF we already have answers.
-                    
-                    # Let's check if the previous paragraph was empty? No.
-                    
-                    # DECISION: We treat it as a NEW Question ONLY IF we have at least 1 answer already recorded 
-                    # AND the previous block was an answer.
-                    # Actually, we are building `current_ans_paragraphs`. 
-                    # If we hit a non-marked line, strict logic usually assumes it's a new question.
-                    # EXCEPTION: If the line is empty?
-                    if not text:
-                         # Empty line - could be part of anything. Let's append to current context.
-                         if current_ans_marker_found:
-                             current_ans_paragraphs.append(para)
-                         else:
-                             current_q_paragraphs.append(para)
-                         continue
-                    
-                    # If not empty and validation says "Valid answers must start with +/-", 
-                    # then this is likely a New Question.
-                    
-                    # 1. Close current answer
-                    current_answers.append(AnswerBlock(
-                        original_paragraphs=current_ans_paragraphs,
-                        is_correct=current_ans_is_correct,
-                        debug_text=current_ans_paragraphs[0].text[:20]
-                    ))
-                    
-                    # 2. Save the whole previous Question Block
-                    if current_q_paragraphs:
-                        q_block = QuestionBlock(
-                            id=question_counter,
-                            question_paragraphs=current_q_paragraphs,
-                            answers=current_answers
-                        )
-                        self.blocks.append(q_block)
-                        question_counter += 1
-                    
-                    # 3. Reset for new Question
-                    current_q_paragraphs = [para]
-                    current_answers = []
-                    current_ans_paragraphs = []
-                    current_ans_marker_found = False
-                    current_ans_is_correct = False
-                    
-                else:
-                    # We are NOT in an answer. So we are in a Question.
+                # Continuation of current block
+                if current_ans_paragraphs:
+                    current_ans_paragraphs.append(para)
+                elif current_q_paragraphs:
                     current_q_paragraphs.append(para)
-
-        # End of loop - save the last chunk
-        if current_ans_marker_found:
-             current_answers.append(AnswerBlock(
-                original_paragraphs=current_ans_paragraphs,
-                is_correct=current_ans_is_correct,
-                debug_text=current_ans_paragraphs[0].text[:20]
-            ))
+                # If neither (e.g. text before first question), ignore or treat as question part?
+                # User documents usually start with a question or title.
+                # Let's ignore text until the first '?' to be safe, or treat as part of Q1 if it exists.
         
-        if current_q_paragraphs:
-            q_block = QuestionBlock(
-                id=question_counter,
-                question_paragraphs=current_q_paragraphs,
-                answers=current_answers
-            )
-            self.blocks.append(q_block)
+        # Save last block
+        save_current_question()
             
         return self.blocks, self.errors
