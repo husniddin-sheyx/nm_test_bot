@@ -27,7 +27,16 @@ USER_TEXTS = {
 
 # Admin Interface Texts (Placeholder for future)
 ADMIN_TEXTS = {
-    "welcome": "👨‍💻 Admin panelga xush kelibsiz.",
+    "welcome": "👨‍💻 **Admin Panel (V5.0)**\n\nQuyidagi tugmalar orqali botni boshqarishingiz mumkin:",
+    "stats": "📊 **Bot Statistikasi**\n\n"
+             "👥 Jami: **{total}** ta\n"
+             "📅 Bugun faol: **{today}** ta\n"
+             "🗓 Haftalik faol: **{week}** ta",
+    "broadcast_start": "📢 Hammaga yuboriladigan xabarni yozing (matn, rasm, video...):",
+    "broadcast_confirm": "✅ Xabar yuborish boshlandi...",
+    "broadcast_done": "✅ Xabar yuborildi!\n\n"
+                     "Yuborildi: {count} ta\n"
+                     "Bloklaganlar: {blocked} ta"
 }
 
 # Validation & Parser Errors
@@ -53,7 +62,9 @@ BUTTONS = {
     },
     "admin": {
         "stats": "📊 Statistika",
-        "settings": "⚙️ Sozlamalar"
+        "broadcast": "📢 Xabar yuborish",
+        "export": "📁 Excel yuklab olish",
+        "back": "🔙 Orqaga"
     }
 }
 

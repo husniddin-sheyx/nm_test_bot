@@ -1,4 +1,7 @@
 import os
+import openpyxl
+from openpyxl import Workbook
+from datetime import datetime
 from aiogram import Router, F, Bot
 from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import Command
@@ -6,114 +9,138 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
 from bot.config import TEMP_DIR
-
 from bot.filters.admin_filter import AdminFilter
-from bot.services.database import get_users_count, get_all_users
-from bot.keyboards.user_kb import get_main_keyboard
+from bot.services.database import (
+    get_users_count, 
+    get_all_users, 
+    get_active_users_count,
+    get_users_detailed
+)
+from bot.utils.lexicon import ADMIN_TEXTS, BUTTONS
+from bot.keyboards.admin_kb import get_admin_main_keyboard, get_admin_back_keyboard
 
 admin_router = Router()
 admin_router.message.filter(AdminFilter())
+admin_router.callback_query.filter(AdminFilter())
 
 class BroadcastState(StatesGroup):
     waiting_for_message = State()
+
+# --- Shared Logic Functions ---
+
+async def get_stats_text() -> str:
+    total = get_users_count()
+    today = get_active_users_count(days=1)
+    week = get_active_users_count(days=7)
+    return ADMIN_TEXTS["stats"].format(total=total, today=today, week=week)
+
+async def generate_user_export() -> str:
+    users = get_users_detailed()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Foydalanuvchilar"
+    
+    headers = ["ID", "To'liq ism", "Username", "Qo'shilgan sana", "Oxirgi faollik"]
+    ws.append(headers)
+    for user in users:
+        ws.append(user)
+        
+    for cell in ws[1]:
+        cell.font = openpyxl.styles.Font(bold=True)
+    
+    filename = f"users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    path = os.path.join(TEMP_DIR, filename)
+    wb.save(path)
+    return path
+
+# --- Message Handlers ---
+
+@admin_router.message(Command("admin"))
+async def cmd_admin(message: Message):
+    await message.answer(
+        ADMIN_TEXTS["welcome"],
+        reply_markup=get_admin_main_keyboard(),
+        parse_mode="Markdown"
+    )
 
 @admin_router.message(Command("check"))
 async def cmd_check_id(message: Message):
     from bot.config import ADMIN_IDS
     is_admin = message.from_user.id in ADMIN_IDS
-    admin_status = "Ha" if is_admin else "Yo'q"
     await message.answer(
-        f"🔍 **Diagnostika:**\n"
-        f"Sizning ID: `{message.from_user.id}`\n"
-        f"Adminlar ro'yxati: `{ADMIN_IDS}`\n"
-        f"Adminmisiz?: **{admin_status}**",
+        f"🔍 **Diagnostika:**\nSizning ID: `{message.from_user.id}`\nAdminmisiz?: **{'Ha' if is_admin else 'Yo''q'}**",
         parse_mode="Markdown"
     )
 
-@admin_router.message(Command("admin"))
-async def cmd_admin(message: Message):
-    from bot.services.database import get_users_count, get_active_users_count
-    
-    total = get_users_count()
-    today = get_active_users_count(days=1)
-    week = get_active_users_count(days=7)
-    
-    text = (
-        f"👨‍💻 **Admin Panel (V4.0)**\n\n"
-        f"👥 Foydalanuvchilar: **{total}** ta\n"
-        f"📅 Bugun faol: **{today}** ta\n"
-        f"🗓 Haftalik faol: **{week}** ta\n\n"
-        f"Xabar yuborish uchun: /broadcast\n"
-        f"Excel yuklash uchun: /export_users"
-    )
-    await message.answer(text, parse_mode="Markdown")
+# --- Callback Handlers ---
 
-@admin_router.message(Command("export_users"))
-async def cmd_export_users(message: Message, bot: Bot):
-    from bot.services.database import get_users_detailed
-    import openpyxl
-    from openpyxl import Workbook
-    from datetime import datetime
-    
-    await message.answer("⏳ Excel fayl tayyorlanmoqda...")
-    
-    users = get_users_detailed()
-    
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "Foydalanuvchilar"
-    
-    # Headers
-    headers = ["ID", "To'liq ism", "Username", "Qo'shilgan sana", "Oxirgi faollik"]
-    ws.append(headers)
-    
-    # Data
-    for user in users:
-        ws.append(user)
-    
-    # Styling (optional but good)
-    for cell in ws[1]:
-        cell.font = openpyxl.styles.Font(bold=True)
-    
-    export_filename = f"users_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
-    export_path = os.path.join(TEMP_DIR, export_filename)
-    wb.save(export_path)
+@admin_router.callback_query(F.data == "admin_main")
+async def back_to_main(callback: CallbackQuery):
+    await callback.message.edit_text(
+        ADMIN_TEXTS["welcome"],
+        reply_markup=get_admin_main_keyboard(),
+        parse_mode="Markdown"
+    )
+    await callback.answer()
+
+@admin_router.callback_query(F.data == "admin_stats")
+async def show_stats(callback: CallbackQuery):
+    text = await get_stats_text()
+    await callback.message.edit_text(
+        text,
+        reply_markup=get_admin_back_keyboard(),
+        parse_mode="Markdown"
+    )
+    await callback.answer()
+
+@admin_router.callback_query(F.data == "admin_export")
+async def export_users_callback(callback: CallbackQuery):
+    await callback.answer("⏳ Tayyorlanmoqda...")
+    path = await generate_user_export()
     
     try:
-        await message.answer_document(
-            FSInputFile(export_path), 
-            caption=f"✅ Jami foydalanuvchilar: **{len(users)}** ta",
-            parse_mode="Markdown"
+        await callback.message.answer_document(
+            FSInputFile(path),
+            caption=f"✅ Jami foydalanuvchilar ro'yxati."
         )
     except Exception as e:
-        await message.answer(f"❌ Faylni yuborishda xatolik: {e}")
+        await callback.message.answer(f"❌ Xatolik: {e}")
     finally:
-        if os.path.exists(export_path):
-            os.remove(export_path)
+        if os.path.exists(path):
+            os.remove(path)
 
-@admin_router.message(Command("broadcast"))
-async def cmd_broadcast(message: Message, state: FSMContext):
-    await message.answer("📢 Hammaga yuboriladigan xabarni yozing (matn, rasm, video...):")
+@admin_router.callback_query(F.data == "admin_broadcast")
+async def broadcast_start_callback(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text(
+        ADMIN_TEXTS["broadcast_start"],
+        reply_markup=get_admin_back_keyboard(),
+        parse_mode="Markdown"
+    )
     await state.set_state(BroadcastState.waiting_for_message)
+    await callback.answer()
+
+# --- Broadcast Flow ---
 
 @admin_router.message(BroadcastState.waiting_for_message)
 async def process_broadcast(message: Message, state: FSMContext, bot: Bot):
-    await message.answer("⏳ Xabar yuborish boshlandi...")
+    if message.text == BUTTONS["admin"]["back"]: # This might not work if they use text, but we have the button
+        await state.clear()
+        return
+
+    msg = await message.answer(ADMIN_TEXTS["broadcast_confirm"])
     users = get_all_users()
     count = 0
     blocked = 0
     
     for (user_id,) in users:
         try:
-            # Copy the message to the user
             await message.send_copy(chat_id=user_id)
             count += 1
-        except Exception as e:
+        except:
             blocked += 1
             
-    await message.answer(
-        f"✅ Xabar yuborildi!\n\n"
-        f"Yuborildi: {count} ta\n"
-        f"Bloklaganlar: {blocked} ta"
+    await msg.edit_text(
+        ADMIN_TEXTS["broadcast_done"].format(count=count, blocked=blocked),
+        reply_markup=get_admin_main_keyboard()
     )
     await state.clear()
