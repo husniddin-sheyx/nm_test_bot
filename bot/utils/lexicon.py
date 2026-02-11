@@ -13,11 +13,22 @@ USER_TEXTS = {
                "📁 Fayl nomi: `{filename}`\n\n"
                "Endi 2-bosqich (DOCX parser) ga o'tishim mumkin.",
     "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}",
-    "instructions": "📖 **Qo'llanma:**\n\n"
-                    "1. Savollar bo'lgan **.docx** faylni tashlang.\n"
-                    "2. Savol va javoblar alohida paragraflarda bo'lsin.\n"
-                    "3. To'g'ri javob oldiga `+`, noto'g'riga `=` qo'ying.\n"
-                    "4. Bot faylni tekshirib, aralashtirish yoki javoblarni ajratib berishni taklif qiladi.",
+    "instructions": "📖 **Botdan foydalanish bo'yicha batafsil qo'llanma:**\n\n"
+                    "1. **Faylni tayyorlash:**\n"
+                    "   - Savollarni `.docx` formatidagi faylga yozing.\n"
+                    "   - Har bir savol `?` belgisi bilan boshlanishi kerak (Masalan: `? O'zbekiston poytaxti qaysi?`).\n"
+                    "   - To'g'ri javob oldiga `+` qo'ying (Masalan: `+ Toshkent`).\n"
+                    "   - Noto'g'ri javoblar oldiga `-` yoki `=` qo'ying.\n\n"
+                    "2. **Faylni yuborish:**\n"
+                    "   - Tayyor faylni botga oddiy fayl ko'rinishida tashlang.\n"
+                    "   - Bot faylni avtomatik tekshirib chiqadi.\n\n"
+                    "3. **Xatolarni boshqarish:**\n"
+                    "   - Agar faylda xatolar bo'lsa, bot sizga **Xatolar hisoboti**ni (docx) yuboradi.\n"
+                    "   - Hisobotda har bir xato bor savol tagida 'XATOLAR' deb yozilgan bo'ladi.\n"
+                    "   - Xatosiz savollarni esa darhol qayta ishlashingiz (aralashtirishingiz) mumkin.\n\n"
+                    "4. **Natijani olish:**\n"
+                    "   - Kerakli tugmani tanlang: **To'liq aralashtirish**, **Faqat javoblar** yoki **Pluslarni olish**.\n"
+                    "   - Bot sizga tayyorlangan yangi faylni yuboradi.",
     "split_results": "⚠️ **Faylda ayrim xatolar topildi!**\n\n"
                      "Muvaffaqiyatli tekshirilgan savollar: **{valid}** ta.\n"
                      "Xatosi bor savollar: **{invalid}** ta.\n\n"
@@ -58,7 +69,8 @@ BUTTONS = {
         "extract": "➕ Pluslarni olish",
         "back": "🔙 Boshiga qaytish",
         "instructions_btn": "📚 Qo'llanma",
-        "settings_btn": "⚙️ Sozlamalar"
+        "settings_btn": "⚙️ Sozlamalar",
+        "admin_panel": "👨‍💻 Admin Panel"
     },
     "admin": {
         "stats": "📊 Statistika",

@@ -16,12 +16,14 @@ def get_main_keyboard() -> ReplyKeyboardMarkup:
     
     return builder.as_markup(resize_keyboard=True)
 
-def get_start_keyboard():
+def get_start_keyboard(is_admin: bool = False):
     builder = ReplyKeyboardBuilder()
     builder.row(
         KeyboardButton(text=BUTTONS["user"]["instructions_btn"]),
         KeyboardButton(text=BUTTONS["user"]["settings_btn"])
     )
+    if is_admin:
+        builder.row(KeyboardButton(text=BUTTONS["user"]["admin_panel"]))
     return builder.as_markup(resize_keyboard=True)
 
 def get_settings_keyboard(current_mode: str):

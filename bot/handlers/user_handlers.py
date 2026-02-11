@@ -3,8 +3,7 @@ from aiogram import Router, F, Bot
 from aiogram.types import Message, FSInputFile, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-
-from bot.config import TEMP_DIR
+from bot.config import TEMP_DIR, ADMIN_IDS
 from bot.utils.lexicon import USER_TEXTS, BUTTONS, ERROR_TEXTS
 from bot.services.database import add_user, update_last_active, get_user_setting, update_user_setting
 from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard, get_settings_keyboard
@@ -26,9 +25,10 @@ async def cmd_start(message: Message, state: FSMContext):
     # Foydalanuvchini bazaga qo'shish
     add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
     
+    is_admin = message.from_user.id in ADMIN_IDS
     await message.answer(
         USER_TEXTS["welcome"] + "\n\n*(Sizning ID raqamingiz: `" + str(message.from_user.id) + "`)*",
-        reply_markup=get_start_keyboard(),
+        reply_markup=get_start_keyboard(is_admin=is_admin),
         parse_mode="Markdown"
     )
 
@@ -47,6 +47,14 @@ async def handle_settings(message: Message):
         reply_markup=get_settings_keyboard(mode),
         parse_mode="Markdown"
     )
+
+@router.message(F.text == BUTTONS["user"]["admin_panel"])
+async def handle_admin_panel(message: Message):
+    if message.from_user.id in ADMIN_IDS:
+        from bot.handlers.admin_handlers import cmd_admin
+        await cmd_admin(message)
+    else:
+        await message.answer("❌ Bu tugma faqat adminlar uchun.")
 
 @router.callback_query(F.data.startswith("set_mode_"))
 async def process_settings_update(callback: CallbackQuery):
