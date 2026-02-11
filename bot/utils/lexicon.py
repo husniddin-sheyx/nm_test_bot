@@ -17,7 +17,12 @@ USER_TEXTS = {
                     "1. Savollar bo'lgan **.docx** faylni tashlang.\n"
                     "2. Savol va javoblar alohida paragraflarda bo'lsin.\n"
                     "3. To'g'ri javob oldiga `+`, noto'g'riga `=` qo'ying.\n"
-                    "4. Bot faylni tekshirib, aralashtirish yoki javoblarni ajratib berishni taklif qiladi."
+                    "4. Bot faylni tekshirib, aralashtirish yoki javoblarni ajratib berishni taklif qiladi.",
+    "split_results": "⚠️ **Faylda ayrim xatolar topildi!**\n\n"
+                     "Muvaffaqiyatli tekshirilgan savollar: **{valid}** ta.\n"
+                     "Xatosi bor savollar: **{invalid}** ta.\n\n"
+                     "Siz muvaffaqiyatli savollarni qayta ishlashingiz mumkin. Xatolar esa alohida faylda yuborildi.",
+    "error_report_sent": "📁 **Xatolar hisoboti yuborildi.** Iltimos, ushbu faylni ochib, xatolarni tuzating va qayta yuboring."
 }
 
 # Admin Interface Texts (Placeholder for future)

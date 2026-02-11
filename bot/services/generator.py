@@ -1,7 +1,8 @@
 from docx import Document
-from typing import List
+from typing import List, Tuple
 from bot.structure import QuestionBlock
 import copy
+from docx.shared import RGBColor
 
 class DocxGenerator:
     def __init__(self, original_file_path: str):
@@ -73,11 +74,42 @@ class DocxGenerator:
 
         self.doc.save(output_path)
 
+    def generate_error_report(self, invalid_blocks: List[Tuple[QuestionBlock, List[str]]], output_path: str):
+        """
+        Generates a document containing only questions with errors, 
+        with specific error messages inserted.
+        """
+        body = self.doc.element.body
+        
+        for q, errors in invalid_blocks:
+            # 1. Question Content
+            for para in q.question_paragraphs:
+                self._append_element(body, para._element)
+            
+            # 2. Answers Content
+            for ans in q.answers:
+                for para in ans.original_paragraphs:
+                    self._append_element(body, para._element)
+            
+            # 3. Insert Errors (Styled)
+            error_p = self.doc.add_paragraph()
+            run = error_p.add_run("❌ XATOLAR:")
+            run.bold = True
+            run.font.color.rgb = RGBColor(255, 0, 0) # Red
+            
+            for err in errors:
+                err_run = error_p.add_run(f"\n- {err}")
+                err_run.font.color.rgb = RGBColor(255, 0, 0)
+            
+            # 4. Spacing
+            self.doc.add_paragraph("")
+
+        self.doc.save(output_path)
+
     def _append_element(self, body, element):
         """
         Appends a copy of the element to the body.
         """
-        # We need a deep copy of the XML element to avoid issues
-        import copy
         new_elem = copy.deepcopy(element)
         body.append(new_elem)
+        return new_elem

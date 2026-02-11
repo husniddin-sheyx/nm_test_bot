@@ -5,7 +5,7 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
 from bot.config import TEMP_DIR
-from bot.utils.lexicon import USER_TEXTS, BUTTONS
+from bot.utils.lexicon import USER_TEXTS, BUTTONS, ERROR_TEXTS
 from bot.services.database import add_user, update_last_active, get_user_setting, update_user_setting
 from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard, get_settings_keyboard
 from bot.services.parser import DocxParser
@@ -83,54 +83,74 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
         
         # 4. Parse Document
         parser = DocxParser(file_path)
-        blocks, errors = parser.parse()
+        blocks, parse_errors = parser.parse()
         
         # 5. Validate Blocks
         validator = Validator()
-        val_errors = validator.validate(blocks)
+        valid_blocks, invalid_with_errors = validator.validate(blocks)
         
-        all_errors = errors + val_errors
-        
-        if all_errors:
-            # Show top 10 errors to user
-            error_msg = "❌ **Faylda quyidagi xatolar topildi:**\n\n" + "\n".join(all_errors[:10])
-            if len(all_errors) > 10:
-                error_msg += f"\n\n... va yana {len(all_errors)-10} ta xato."
-            await message.answer(error_msg)
+        # 6. Handle Categorization Results
+        if invalid_with_errors:
+            # Generate Error Report
+            name, ext = os.path.splitext(document.file_name)
+            report_filename = f"{name}_xatolar{ext}"
+            report_path = os.path.join(TEMP_DIR, f"report_{message.from_user.id}_{report_filename}")
             
-            # --- Admin Alert (Stage 27) ---
+            generator = DocxGenerator(file_path)
+            generator.generate_error_report(invalid_with_errors, report_path)
+            
+            # Send Report
+            await message.answer_document(
+                FSInputFile(report_path, filename=report_filename),
+                caption=USER_TEXTS["error_report_sent"]
+            )
+            os.remove(report_path)
+            
+            # --- Admin Alert for Errors ---
             from bot.config import ADMIN_IDS
+            error_summary = "\n".join([f"Q{q.id}: {', '.join(errs)}" for q, errs in invalid_with_errors[:5]])
             admin_alert = (
                 f"🚨 **Xatoli fayl yuborildi!**\n\n"
                 f"Foydalanuvchi: {message.from_user.full_name} (@{message.from_user.username})\n"
-                f"ID: `{message.from_user.id}`\n\n"
-                f"**Xatolar:**\n{error_msg}"
+                f"Xatolar: {len(invalid_with_errors)} ta\n\n"
+                f"Foydalanuvchiga hisobot yuborildi."
             )
             for admin_id in ADMIN_IDS:
                 try:
-                    await bot.send_document(
-                        admin_id, 
-                        FSInputFile(file_path), 
-                        caption=admin_alert, 
-                        parse_mode="Markdown"
-                    )
-                except:
-                    pass
-            
-            # Cleanup
-            try:
+                    await bot.send_message(admin_id, admin_alert)
+                except: pass
+
+        if not valid_blocks:
+            await message.answer(ERROR_TEXTS["no_questions"])
+            if os.path.exists(file_path):
                 os.remove(file_path)
-            except:
-                pass
             return
 
-        # 6. Success -> Set State and Show Keyboard
+        # 7. Prepare 'Clean' Source for Processed Flow
+        if invalid_with_errors:
+            # We must create a temporary file with ONLY valid blocks 
+            # so the Processor doesn't re-encounter invalid ones.
+            clean_path = os.path.join(TEMP_DIR, f"clean_{message.from_user.id}_{document.file_name}")
+            generator = DocxGenerator(file_path)
+            generator.generate(valid_blocks, clean_path)
+            
+            # Replace file_path with clean one
+            os.remove(file_path)
+            file_path = clean_path
+            
+            await message.answer(
+                USER_TEXTS["split_results"].format(valid=len(valid_blocks), invalid=len(invalid_with_errors)),
+                parse_mode="Markdown"
+            )
+
+        # 8. Success -> Set State and Show Keyboard
         await state.update_data(file_path=file_path, original_filename=document.file_name)
         await state.set_state(ValidatedFileState.waiting_for_action)
 
         await message.answer(
             USER_TEXTS["success"].format(filename=document.file_name),
-            reply_markup=get_main_keyboard()
+            reply_markup=get_main_keyboard(),
+            parse_mode="Markdown"
         )
 
     except Exception as e:
