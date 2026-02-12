@@ -16,19 +16,19 @@ USER_TEXTS = {
     "instructions": "📖 **Botdan foydalanish bo'yicha batafsil qo'llanma:**\n\n"
                     "1. **Faylni tayyorlash:**\n"
                     "   - Savollarni `.docx` formatidagi faylga yozing.\n"
-                    "   - Har bir savol `?` belgisi bilan boshlanishi kerak (Masalan: `? O'zbekiston poytaxti qaysi?`).\n"
-                    "   - To'g'ri javob oldiga `+` qo'ying (Masalan: `+ Toshkent`).\n"
-                    "   - Noto'g'ri javoblar oldiga `-` yoki `=` qo'ying.\n\n"
+                    "   - Savol: `?` bilan boshlanadi. Savol matni bir necha qatordan iborat bo'lishi mumkin.\n"
+                    "   - To'g'ri javob: `+` bilan boshlanadi.\n"
+                    "   - Noto'g'ri javob: `-` yoki `=` bilan boshlanadi.\n"
+                    "   - **Rasmlar/Formulalar**: Ularni aynan o'sha savol yoki javob matnidan keyin joylashtiring. Bot ularni o'z joyida saqlab qoladi.\n\n"
                     "2. **Faylni yuborish:**\n"
-                    "   - Tayyor faylni botga oddiy fayl ko'rinishida tashlang.\n"
-                    "   - Bot faylni avtomatik tekshirib chiqadi.\n\n"
+                    "   - Tayyor faylni botga tashlang. Bot avtomatik tekshirib chiqadi.\n\n"
                     "3. **Xatolarni boshqarish:**\n"
-                    "   - Agar faylda xatolar bo'lsa, bot sizga **Xatolar hisoboti**ni (docx) yuboradi.\n"
-                    "   - Hisobotda har bir xato bor savol tagida 'XATOLAR' deb yozilgan bo'ladi.\n"
-                    "   - Xatosiz savollarni esa darhol qayta ishlashingiz (aralashtirishingiz) mumkin.\n\n"
+                    "   - Agar faylda xatolar bo'lsa, bot sizga batafsil **Xatolar hisoboti**ni yuboradi.\n"
+                    "   - Hisoboti faylini ochib, xatolarni tuzatib, qayta yuborishingiz mumkin.\n\n"
                     "4. **Natijani olish:**\n"
-                    "   - Kerakli tugmani tanlang: **To'liq aralashtirish**, **Faqat javoblar** yoki **Pluslarni olish**.\n"
-                    "   - Bot sizga tayyorlangan yangi faylni yuboradi.",
+                    "   - **To'liq aralashtirish**: Savollar va javoblar tartibi o'zgaradi.\n"
+                    "   - **Faqat javoblar**: Savollar tartibi saqlanadi, faqat variantlar aralashadi.\n"
+                    "   - **Pluslarni olish**: Faqat to'g'ri javoblar qoladi (shpargalka uchun).",
     "split_results": "⚠️ **Faylda ayrim xatolar topildi!**\n\n"
                      "Muvaffaqiyatli tekshirilgan savollar: **{valid}** ta.\n"
                      "Xatosi bor savollar: **{invalid}** ta.\n\n"
@@ -82,5 +82,6 @@ BUTTONS = {
 
 COMMANDS_MENU = {
     "start": "♻️ Botni ishga tushirish",
-    "help": "❓ Yordam va Qo'llanma"
+    "help": "❓ Yordam va Qo'llanma",
+    "admin": "👨‍💻 Admin Panelga kirish"
 }
