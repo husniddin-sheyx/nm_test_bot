@@ -7,16 +7,22 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 
 from bot.config import TEMP_DIR, UPLOADS_DIR, ADMIN_IDS
-from bot.utils.lexicon import USER_TEXTS, BUTTONS, ERROR_TEXTS
+from bot.utils.lexicon import LEXICON, ERROR_TEXTS
 from bot.services.database import (
     add_user, 
     update_last_active, 
     get_user_setting, 
     update_user_setting,
     log_file_upload,
-    get_user_files_history
+    get_user_files_history,
+    set_user_language
 )
-from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard, get_settings_keyboard
+from bot.keyboards.user_kb import (
+    get_main_keyboard, 
+    get_start_keyboard, 
+    get_settings_keyboard,
+    get_lang_selection_keyboard
+)
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
 from bot.states import ValidatedFileState
@@ -29,41 +35,58 @@ router = Router()
 MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext):
+async def cmd_start(message: Message, state: FSMContext, lang: str):
     await state.clear()
-    # Foydalanuvchini bazaga qo'shish
     add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
     
     is_admin = message.from_user.id in ADMIN_IDS
+    text = LEXICON[lang]["user"]["welcome"] + "\n\n*(ID: `" + str(message.from_user.id) + "`)*"
     await message.answer(
-        USER_TEXTS["welcome"] + "\n\n*(Sizning ID raqamingiz: `" + str(message.from_user.id) + "`)*",
-        reply_markup=get_start_keyboard(is_admin=is_admin),
+        text,
+        reply_markup=get_start_keyboard(lang=lang, is_admin=is_admin),
         parse_mode="Markdown"
     )
 
 @router.message(Command("help"))
-@router.message(F.text == BUTTONS["user"]["instructions_btn"])
-async def cmd_instructions(message: Message):
-    await message.answer(USER_TEXTS["instructions"])
+@router.message(F.text.in_([LEXICON[l]["buttons"]["instructions_btn"] for l in LEXICON]))
+async def cmd_instructions(message: Message, lang: str):
+    await message.answer(LEXICON[lang]["user"]["instructions"])
 
-@router.message(F.text == BUTTONS["user"]["settings_btn"])
-async def handle_settings(message: Message):
-    mode = get_user_setting(message.from_user.id, "default_shuffle", "shuffle")
+@router.message(F.text.in_([LEXICON[l]["buttons"]["settings_btn"] for l in LEXICON]))
+async def handle_settings(message: Message, lang: str):
     await message.answer(
-        "⚙️ **Sozlamalar**\n\n"
-        "Bu yerda siz botning ishlash usulini o'zingizga moslab olishingiz mumkin.\n"
-        f"Hozirgi standart usul: **{mode}**",
-        reply_markup=get_settings_keyboard(mode),
-        parse_mode="Markdown"
+        LEXICON[lang]["user"]["lang_select"],
+        reply_markup=get_settings_keyboard(lang=lang)
     )
 
-@router.message(F.text == BUTTONS["user"]["admin_panel"])
-async def handle_admin_panel(message: Message):
+@router.callback_query(F.data == "change_lang")
+async def process_change_lang(callback: CallbackQuery, lang: str):
+    await callback.message.edit_text(
+        LEXICON[lang]["user"]["lang_select"],
+        reply_markup=get_lang_selection_keyboard()
+    )
+
+@router.callback_query(F.data.startswith("set_lang_"))
+async def process_set_lang(callback: CallbackQuery, state: FSMContext):
+    new_lang = callback.data.replace("set_lang_", "")
+    set_user_language(callback.from_user.id, new_lang)
+    
+    # Refresh start message with new language
+    is_admin = callback.from_user.id in ADMIN_IDS
+    await callback.message.delete()
+    await callback.message.answer(
+        LEXICON[new_lang]["user"]["lang_updated"],
+        reply_markup=get_start_keyboard(lang=new_lang, is_admin=is_admin)
+    )
+    await callback.answer()
+
+@router.message(F.text.in_([LEXICON[l]["buttons"]["admin_panel"] for l in LEXICON]))
+async def handle_admin_panel(message: Message, lang: str):
     if message.from_user.id in ADMIN_IDS:
         from bot.handlers.admin_handlers import cmd_admin
-        await cmd_admin(message)
+        await cmd_admin(message, lang)
     else:
-        await message.answer("❌ Bu tugma faqat adminlar uchun.")
+        await message.answer("❌ Admin only.")
 
 from aiogram.exceptions import TelegramBadRequest
 
@@ -83,20 +106,20 @@ async def process_settings_update(callback: CallbackQuery):
             raise e
 
 @router.message(F.document)
-async def handle_document(message: Message, bot: Bot, state: FSMContext):
+async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: str):
     document = message.document
 
     # 1. Extension check
     if not document.file_name.lower().endswith('.docx'):
-        await message.answer(USER_TEXTS["wrong_ext"])
+        await message.answer(LEXICON[lang]["user"]["wrong_ext"])
         return
 
     # 2. Size check
     if document.file_size > MAX_FILE_SIZE:
-        await message.answer(USER_TEXTS["too_large"])
+        await message.answer(LEXICON[lang]["user"]["too_large"])
         return
     
-    await message.answer(USER_TEXTS["processing"])
+    await message.answer(LEXICON[lang]["user"]["processing"])
 
     try:
         # Update last active on every file upload
@@ -127,7 +150,7 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             # Send Report
             await message.answer_document(
                 FSInputFile(report_path, filename=report_filename),
-                caption=USER_TEXTS["error_report_sent"]
+                caption=LEXICON[lang]["user"]["error_report_sent"]
             )
             os.remove(report_path)
             
@@ -146,7 +169,7 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
                 except: pass
 
         if not valid_blocks:
-            await message.answer(ERROR_TEXTS["no_questions"])
+            await message.answer(ERROR_TEXTS["no_questions"]) # Currently unified
             if os.path.exists(file_path):
                 os.remove(file_path)
             return
@@ -164,7 +187,7 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             file_path = clean_path
             
             await message.answer(
-                USER_TEXTS["split_results"].format(valid=len(valid_blocks), invalid=len(invalid_with_errors)),
+                LEXICON[lang]["user"]["split_results"].format(valid=len(valid_blocks), invalid=len(invalid_with_errors)),
                 parse_mode="Markdown"
             )
 
@@ -178,16 +201,16 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
         await state.set_state(ValidatedFileState.waiting_for_action)
 
         await message.answer(
-            USER_TEXTS["success"].format(filename=document.file_name),
-            reply_markup=get_main_keyboard(),
+            LEXICON[lang]["user"]["success"].format(filename=document.file_name),
+            reply_markup=get_main_keyboard(lang=lang),
             parse_mode="Markdown"
         )
 
     except Exception as e:
-        await message.answer(USER_TEXTS["error"].format(error=str(e)))
+        await message.answer(LEXICON[lang]["user"]["error"].format(error=str(e)))
 
 @router.message(ValidatedFileState.waiting_for_action)
-async def handle_action(message: Message, state: FSMContext):
+async def handle_action(message: Message, state: FSMContext, lang: str):
     data = await state.get_data()
     file_path = data.get("file_path")
     
@@ -197,21 +220,11 @@ async def handle_action(message: Message, state: FSMContext):
         return
 
     text = message.text
-    valid_buttons = [
-        BUTTONS["user"]["shuffle"], 
-        BUTTONS["user"]["shuffle_answers"], 
-        BUTTONS["user"]["extract"],
-        BUTTONS["user"]["back"]
-    ]
-    
-    if text not in valid_buttons:
-        await message.answer("Iltimos, tugmalardan birini tanlang.")
-        return
-
-    # Handle Restart/Back
-    if text == BUTTONS["user"]["back"]:
+    # Handle Back
+    if text in [LEXICON[l]["buttons"]["back"] for l in LEXICON]:
         await state.clear()
-        await message.answer(USER_TEXTS["welcome"], reply_markup=get_start_keyboard())
+        is_admin = message.from_user.id in ADMIN_IDS
+        await message.answer(LEXICON[lang]["user"]["welcome"], reply_markup=get_start_keyboard(lang=lang, is_admin=is_admin))
         # Cleanup file if needed
         if file_path and os.path.exists(file_path):
             try:
@@ -220,8 +233,25 @@ async def handle_action(message: Message, state: FSMContext):
                 pass
         return
 
-    await message.answer("⏳ Tayyorlanmoqda...")
-    update_last_active(message.from_user.id) # Track active button press
+    # Map buttons to text keys for processor
+    processor_action = None
+    for l in LEXICON:
+        if text == LEXICON[l]["buttons"]["shuffle"]:
+            processor_action = LEXICON["uz"]["buttons"]["shuffle"] # Use Uz keys for core logic 
+            break
+        elif text == LEXICON[l]["buttons"]["shuffle_answers"]:
+            processor_action = LEXICON["uz"]["buttons"]["shuffle_answers"]
+            break
+        elif text == LEXICON[l]["buttons"]["extract"]:
+            processor_action = LEXICON["uz"]["buttons"]["extract"]
+            break
+    
+    if not processor_action:
+        await message.answer("Select one:")
+        return
+
+    await message.answer("⏳ ...")
+    update_last_active(message.from_user.id) 
 
     try:
         # 1. Parse again
@@ -230,17 +260,13 @@ async def handle_action(message: Message, state: FSMContext):
         
         # 2. Process
         processor = Processor(blocks)
-        processed_blocks = processor.process(text)
+        processed_blocks = processor.process(processor_action)
         
         # 3. Generate New File
         orig_name = data.get("original_filename", "result.docx")
         name, ext = os.path.splitext(orig_name)
         
-        suffix = "_aralashtirilgan"
-        if text == BUTTONS["user"]["shuffle_answers"]:
-            suffix = "_javoblar_aralash"
-        elif text == BUTTONS["user"]["extract"]:
-            suffix = "_pluslar"
+        suffix = "_result"
             
         new_filename = f"{name}{suffix}{ext}"
         output_path = os.path.join(TEMP_DIR, f"gen_{message.from_user.id}_{new_filename}")
@@ -250,9 +276,9 @@ async def handle_action(message: Message, state: FSMContext):
         
         # 4. Send File
         doc_file = FSInputFile(output_path, filename=new_filename)
-        caption = "✅ Marhamat, tayyor fayl!"
-        if text == BUTTONS["user"]["extract"]:
-            caption += " (Faqat to'g'ri javoblar)"
+        caption = "✅" 
+        if processor_action == LEXICON["uz"]["buttons"]["extract"]:
+            caption += " (Pluses)"
         
         await message.answer_document(doc_file, caption=caption)
         
@@ -262,12 +288,12 @@ async def handle_action(message: Message, state: FSMContext):
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
 
-@router.message(F.text == BUTTONS["user"]["history"])
-async def show_history(message: Message):
+@router.message(F.text.in_([LEXICON[l]["buttons"]["history"] for l in LEXICON]))
+async def show_history(message: Message, lang: str):
     files = get_user_files_history(message.from_user.id)
     
     if not files:
-        await message.answer(USER_TEXTS["no_history"])
+        await message.answer(LEXICON[lang]["user"]["no_history"])
         return
 
     from aiogram.utils.keyboard import InlineKeyboardBuilder
@@ -282,10 +308,10 @@ async def show_history(message: Message):
             callback_data=f"hist_{file_id}"
         ))
     
-    await message.answer(USER_TEXTS["history_welcome"], reply_markup=builder.as_markup())
+    await message.answer(LEXICON[lang]["user"]["history_welcome"], reply_markup=builder.as_markup())
 
 @router.callback_query(F.data.startswith("hist_"))
-async def process_history_select(callback: CallbackQuery, state: FSMContext):
+async def process_history_select(callback: CallbackQuery, state: FSMContext, lang: str):
     file_id = int(callback.data.replace("hist_", ""))
     
     # Get file path from DB

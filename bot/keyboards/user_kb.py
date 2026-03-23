@@ -1,46 +1,48 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
-from aiogram.utils.keyboard import ReplyKeyboardBuilder
-from bot.utils.lexicon import BUTTONS
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.utils.keyboard import ReplyKeyboardBuilder, InlineKeyboardBuilder
+from bot.utils.lexicon import LEXICON
 
-def get_main_keyboard() -> ReplyKeyboardMarkup:
+def get_main_keyboard(lang: str = "uz") -> ReplyKeyboardMarkup:
     builder = ReplyKeyboardBuilder()
+    buttons = LEXICON[lang]["buttons"]
     
     builder.row(
-        KeyboardButton(text=BUTTONS["user"]["shuffle"]),
-        KeyboardButton(text=BUTTONS["user"]["shuffle_answers"])
+        KeyboardButton(text=buttons["shuffle"]),
+        KeyboardButton(text=buttons["shuffle_answers"])
     )
     builder.row(
-        KeyboardButton(text=BUTTONS["user"]["extract"]),
-        KeyboardButton(text=BUTTONS["user"]["back"])
+        KeyboardButton(text=buttons["extract"]),
+        KeyboardButton(text=buttons["back"])
     )
     
     return builder.as_markup(resize_keyboard=True)
 
-def get_start_keyboard(is_admin: bool = False):
+def get_start_keyboard(lang: str = "uz", is_admin: bool = False):
     builder = ReplyKeyboardBuilder()
+    buttons = LEXICON[lang]["buttons"]
+    
     builder.row(
-        KeyboardButton(text=BUTTONS["user"]["instructions_btn"]),
-        KeyboardButton(text=BUTTONS["user"]["history"]),
-        KeyboardButton(text=BUTTONS["user"]["settings_btn"])
+        KeyboardButton(text=buttons["instructions_btn"]),
+        KeyboardButton(text=buttons["history"]),
+        KeyboardButton(text=buttons["settings_btn"])
     )
     if is_admin:
-        builder.row(KeyboardButton(text=BUTTONS["user"]["admin_panel"]))
+        builder.row(KeyboardButton(text=buttons["admin_panel"]))
     return builder.as_markup(resize_keyboard=True)
 
-def get_settings_keyboard(current_mode: str):
-    from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-    from aiogram.utils.keyboard import InlineKeyboardBuilder
-    
+def get_settings_keyboard(lang: str = "uz"):
     builder = InlineKeyboardBuilder()
+    buttons = LEXICON[lang]["buttons"]
     
-    # Modes
-    full_text = "✅ To'liq aralashtirish" if current_mode == "shuffle" else "To'liq aralashtirish"
-    ans_text = "✅ Faqat javoblar" if current_mode == "shuffle_answers" else "Faqat javoblar"
+    builder.row(InlineKeyboardButton(text=buttons["lang"], callback_data="change_lang"))
     
-    builder.row(InlineKeyboardButton(text=full_text, callback_data="set_mode_shuffle"))
-    builder.row(InlineKeyboardButton(text=ans_text, callback_data="set_mode_shuffle_answers"))
-    
-    # Language (Future proof)
-    # builder.row(InlineKeyboardButton(text="Tilni o'zgartirish 🇺🇿", callback_data="set_lang"))
-    
+    return builder.as_markup()
+
+def get_lang_selection_keyboard():
+    builder = InlineKeyboardBuilder()
+    builder.row(
+        InlineKeyboardButton(text="🇺🇿 O'zbek", callback_data="set_lang_uz"),
+        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru"),
+        InlineKeyboardButton(text="🇺🇸 English", callback_data="set_lang_en")
+    )
     return builder.as_markup()

@@ -15,6 +15,10 @@ async def main():
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
 
+    # Register Middlewares
+    from bot.middlewares.i18n import I18nMiddleware
+    dp.update.middleware(I18nMiddleware())
+
     # Include the main router which holds all sub-routers
     dp.include_router(main_router)
     

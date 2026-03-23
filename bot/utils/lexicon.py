@@ -1,97 +1,155 @@
-# User Interface Texts
-USER_TEXTS = {
-    "welcome": "👋 Salom! Men Test Aralashtiruvchi Botman.\n"
-               "Menga testlaringiz yozilgan **.docx** faylni yuboring.\n\n"
-               "📌 **Talablar:**\n"
-               "- Fayl formati: .docx\n"
-               "- Har bir savol alohida blok bo'lishi kerak\n"
-               "- Javoblar `+` (to'g'ri) va `=` (noto'g'ri) bilan boshlanishi kerak",
-    "wrong_ext": "❌ Iltimos, faqat **.docx** formatidagi faylni yuboring.",
-    "too_large": "❌ Fayl hajmi juda katta (maksimal 20MB).",
-    "processing": "⏳ Fayl qabul qilindi. Tekshirilmoqda...",
-    "success": "✅ **Fayl muvaffaqiyatli saqlandi!**\n"
-               "📁 Fayl nomi: `{filename}`\n\n"
-               "Endi 2-bosqich (DOCX parser) ga o'tishim mumkin.",
-    "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}",
-    "instructions": "📖 **Botdan foydalanish bo'yicha batafsil qo'llanma:**\n\n"
-                    "1. **Faylni tayyorlash:**\n"
-                    "   - Savollarni `.docx` formatidagi faylga yozing.\n"
-                    "   - Savol: `?` bilan boshlanadi. Savol matni bir necha qatordan iborat bo'lishi mumkin.\n"
-                    "   - To'g'ri javob: `+` bilan boshlanadi.\n"
-                    "   - Noto'g'ri javob: `-` yoki `=` bilan boshlanadi.\n"
-                    "   - **Rasmlar/Formulalar**: Ularni aynan o'sha savol yoki javob matnidan keyin joylashtiring. Bot ularni o'z joyida saqlab qoladi.\n\n"
-                    "2. **Faylni yuborish:**\n"
-                    "   - Tayyor faylni botga tashlang. Bot avtomatik tekshirib chiqadi.\n\n"
-                    "3. **Xatolarni boshqarish:**\n"
-                    "   - Agar faylda xatolar bo'lsa, bot sizga batafsil **Xatolar hisoboti**ni yuboradi.\n"
-                    "   - Hisoboti faylini ochib, xatolarni tuzatib, qayta yuborishingiz mumkin.\n\n"
-                    "4. **Natijani olish:**\n"
-                    "   - **To'liq aralashtirish**: Savollar va javoblar tartibi o'zgaradi.\n"
-                    "   - **Faqat javoblar**: Savollar tartibi saqlanadi, faqat variantlar aralashadi.\n"
-                    "   - **Pluslarni olish**: Faqat to'g'ri javoblar qoladi (shpargalka uchun).",
-    "split_results": "⚠️ **Faylda ayrim xatolar topildi!**\n\n"
-                     "Muvaffaqiyatli tekshirilgan savollar: **{valid}** ta.\n"
-                     "Xatosi bor savollar: **{invalid}** ta.\n\n"
-                     "Siz muvaffaqiyatli savollarni qayta ishlashingiz mumkin. Xatolar esa alohida faylda yuborildi.",
-    "error_report_sent": "📁 **Xatolar hisoboti yuborildi.** Iltimos, ushbu faylni ochib, xatolarni tuzating va qayta yuboring.",
-    "history_welcome": "📂 **Siz yuklagan oxirgi fayllar:**\n\nQayta ishlash uchun faylni tanlang:",
-    "no_history": "📭 Siz hali birorta ham fayl yuklamagansiz."
-}
-
-# Admin Interface Texts (Placeholder for future)
-ADMIN_TEXTS = {
-    "welcome": "👨‍💻 **Admin Panel (V5.0)**\n\nQuyidagi tugmalar orqali botni boshqarishingiz mumkin:",
-    "stats": "📊 **Bot Statistikasi**\n\n"
-             "👥 Jami foydalanuvchilar: **{total}** ta\n"
-             "📅 Bugun faol: **{today}** ta\n\n"
-             "📄 **Fayllar statistikasi:**\n"
-             "📁 Jami qayta ishlangan: **{total_files}** ta\n"
-             "🕒 Bugun: **{files_today}** ta\n"
-             "🗓 Shu haftada: **{files_week}** ta",
-    "broadcast_start": "📢 Hammaga yuboriladigan xabarni yozing (matn, rasm, video...):",
-    "broadcast_preview": "👆 **Xabar ko'rinishi yuqorida.**\n\nUni barcha foydalanuvchilarga yuborishni tasdiqlaysizmi?",
-    "broadcast_confirm": "✅ Xabar yuborish boshlandi...",
-    "broadcast_done": "✅ Xabar yuborildi!\n\n"
-                     "Yuborildi: {count} ta\n"
-                     "Bloklaganlar: {blocked} ta",
-    "broadcast_cancelled": "❌ Xabar yuborish bekor qilindi."
-}
-
-# Validation & Parser Errors
-ERROR_TEXTS = {
-    "no_questions": "❗ Faylda savollar topilmadi.",
-    "missing_plus": "❗ {id}-savol: To'g'ri javob (+) belgilanmagan.",
-    "multiple_plus": "❗ {id}-savol: {count} ta to'g'ri javob (+) belgilangan (faqat 1 ta bo'lishi kerak).",
-    "few_answers": "❗ {id}-savol: Javoblar soni kam (kamida 2 ta bo'lishi kerak).",
-    "orphan_image": "❗ {id}-qator: Rasm yoki formula savolga tegishli emas (context yo'q).",
-    "duplicate_question": "⚠️ {id}-savol: Bu savol matni avvalroq ({first_id}-savol) ham ishlatilgan. (Takroriy savol)",
-    "duplicate_answer": "⚠️ {id}-savol: Quyidagi javoblar bir xil: {dupes}"
-}
-
-# Buttons
-BUTTONS = {
-    "user": {
-        "shuffle": "🔀 To'liq Aralashtirish",
-        "shuffle_answers": "🔀 Faqat javoblar",
-        "extract": "➕ Pluslarni olish",
-        "back": "🔙 Boshiga qaytish",
-        "instructions_btn": "📚 Qo'llanma",
-        "settings_btn": "⚙️ Sozlamalar",
-        "history": "📂 Mening fayllarim",
-        "admin_panel": "👨‍💻 Admin Panel"
+# Multilingual Lexicon
+LEXICON = {
+    "uz": {
+        "user": {
+            "welcome": "👋 Salom! Men Test Aralashtiruvchi Botman.\n"
+                       "Menga testlaringiz yozilgan **.docx** faylni yuboring.\n\n"
+                       "📌 **Talablar:**\n"
+                       "- Fayl formati: .docx\n"
+                       "- Har bir savol alohida blok bo'lishi kerak\n"
+                       "- Javoblar `+` (to'g'ri) va `=` (noto'g'ri) bilan boshlanishi kerak",
+            "wrong_ext": "❌ Iltimos, faqat **.docx** formatidagi faylni yuboring.",
+            "too_large": "❌ Fayl hajmi juda katta (maksimal 20MB).",
+            "processing": "⏳ Fayl qabul qilindi. Tekshirilmoqda...",
+            "success": "✅ **Fayl muvaffaqiyatli saqlandi!**\n"
+                       "📁 Fayl nomi: `{filename}`",
+            "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}",
+            "instructions": "📖 **Qo'llanma:** Savol `?` bilan, to'g'ri javob `+` bilan, noto'g'ri javob `-` yoki `=` bilan boshlanishi kerak.",
+            "split_results": "⚠️ **Xatolar topildi!**\n\nMuvaffaqiyatli: **{valid}**\nXatoli: **{invalid}**",
+            "error_report_sent": "📁 Xatolar hisoboti yuborildi.",
+            "history_welcome": "📂 **Oxirgi fayllaringiz:**",
+            "no_history": "📭 Sizda yuklangan fayllar yo'q.",
+            "lang_select": "🌐 **Tilni tanlang / Выберите язык / Select language**",
+            "lang_updated": "✅ Til muvaffaqiyatli o'zgartirildi!"
+        },
+        "admin": {
+            "welcome": "👨‍💻 **Admin Panel**",
+            "stats": "📊 **Statistika**\n\n👥 Foydalanuvchilar: {total}\n📅 Bugun faol: {today}\n📁 Fayllar: {total_files}",
+            "broadcast_start": "📢 Xabar matnini yuboring:",
+            "broadcast_preview": "👆 Xabar ko'rinishi yuqorida. Tasdiqlaysizmi?",
+            "broadcast_confirm": "✅ Yuborish boshlandi...",
+            "broadcast_done": "✅ Yuborildi: {count}\nBloklangan: {blocked}",
+            "broadcast_cancelled": "❌ Bekor qilindi."
+        },
+        "buttons": {
+            "shuffle": "🔀 To'liq Aralashtirish",
+            "shuffle_answers": "🔀 Faqat javoblar",
+            "extract": "➕ Pluslarni olish",
+            "back": "🔙 Orqaga",
+            "instructions_btn": "📚 Qo'llanma",
+            "settings_btn": "⚙️ Sozlamalar",
+            "history": "📂 Mening fayllarim",
+            "admin_panel": "👨‍💻 Admin Panel",
+            "lang": "🌐 Tilni o'zgartirish",
+            "confirm": "✅ Tasdiqlash",
+            "cancel": "❌ Bekor qilish"
+        }
     },
-    "admin": {
-        "stats": "📊 Statistika",
-        "broadcast": "📢 Xabar yuborish",
-        "export": "📁 Excel yuklab olish",
-        "back": "🔙 Orqaga",
-        "confirm": "✅ Tasdiqlash",
-        "cancel": "❌ Bekor qilish"
+    "ru": {
+        "user": {
+            "welcome": "👋 Привет! Я бот для перемешивания тестов.\nПришли мне файл **.docx** с вашими тестами.",
+            "wrong_ext": "❌ Пожалуйста, отправьте файл в формате **.docx**.",
+            "too_large": "❌ Файл слишком большой (макс. 20МБ).",
+            "processing": "⏳ Файл получен. Проверяю...",
+            "success": "✅ **Файл успешно сохранен!**\n📁 Имя файла: `{filename}`",
+            "error": "❌ Ошибка при загрузке: {error}",
+            "instructions": "📖 **Инструкция:** Вопрос начинается с `?`, правильный ответ с `+`, неправильный с `-` или `=`.",
+            "split_results": "⚠️ **Найдены ошибки!**\n\nУспешно: **{valid}**\nС ошибками: **{invalid}**",
+            "error_report_sent": "📁 Отчет об ошибках отправлен.",
+            "history_welcome": "📂 **Ваши последние файлы:**",
+            "no_history": "📭 У вас нет загруженных файлов.",
+            "lang_select": "🌐 **Выберите язык**",
+            "lang_updated": "✅ Язык успешно изменен!"
+        },
+        "admin": {
+            "welcome": "👨‍💻 **Админ Панель**",
+            "stats": "📊 **Статистика**\n\n👥 Пользователи: {total}\n📅 Активны сегодня: {today}\n📁 Файлов: {total_files}",
+            "broadcast_start": "📢 Отправьте текст сообщения:",
+            "broadcast_preview": "👆 Предпросмотр выше. Подтверждаете?",
+            "broadcast_confirm": "✅ Рассылка началась...",
+            "broadcast_done": "✅ Отправлено: {count}\nЗаблокировано: {blocked}",
+            "broadcast_cancelled": "❌ Отменено."
+        },
+        "buttons": {
+            "shuffle": "🔀 Полное перемешивание",
+            "shuffle_answers": "🔀 Только ответы",
+            "extract": "➕ Извлечь плюсы",
+            "back": "🔙 Назад",
+            "instructions_btn": "📚 Инструкция",
+            "settings_btn": "⚙️ Настройки",
+            "history": "📂 Мои файлы",
+            "admin_panel": "👨‍💻 Админ Панель",
+            "lang": "🌐 Сменить язык",
+            "confirm": "✅ Подтвердить",
+            "cancel": "❌ Отмена"
+        }
+    },
+    "en": {
+        "user": {
+            "welcome": "👋 Hello! I am the Test Shuffler Bot.\nSend me a **.docx** file with your tests.",
+            "wrong_ext": "❌ Please send a file in **.docx** format.",
+            "too_large": "❌ File is too large (max 20MB).",
+            "processing": "⏳ File received. Checking...",
+            "success": "✅ **File saved successfully!**\n📁 Filename: `{filename}`",
+            "error": "❌ File upload error: {error}",
+            "instructions": "📖 **Guide:** Question starts with `?`, correct answer with `+`, incorrect with `-` or `=`.",
+            "split_results": "⚠️ **Errors found!**\n\nValid: **{valid}**\nInvalid: **{invalid}**",
+            "error_report_sent": "📁 Error report sent.",
+            "history_welcome": "📂 **Your recent files:**",
+            "no_history": "📭 No uploaded files found.",
+            "lang_select": "🌐 **Select language**",
+            "lang_updated": "✅ Language updated successfully!"
+        },
+        "admin": {
+            "welcome": "👨‍💻 **Admin Panel**",
+            "stats": "📊 **Statistics**\n\n👥 Users: {total}\n📅 Active today: {today}\n📁 Files: {total_files}",
+            "broadcast_start": "📢 Send the message text:",
+            "broadcast_preview": "👆 Preview above. Confirm?",
+            "broadcast_confirm": "✅ Sending started...",
+            "broadcast_done": "✅ Sent: {count}\nBlocked: {blocked}",
+            "broadcast_cancelled": "❌ Cancelled."
+        },
+        "buttons": {
+            "shuffle": "🔀 Full Shuffle",
+            "shuffle_answers": "🔀 Shuffle Answers Only",
+            "extract": "➕ Extract Pluses",
+            "back": "🔙 Back",
+            "instructions_btn": "📚 Guide",
+            "settings_btn": "⚙️ Settings",
+            "history": "📂 My Files",
+            "admin_panel": "👨‍💻 Admin Panel",
+            "lang": "🌐 Change Language",
+            "confirm": "✅ Confirm",
+            "cancel": "❌ Cancel"
+        }
     }
 }
 
+# Errors remain unified for now or can be localized later
+ERROR_TEXTS = {
+    "no_questions": "❗ Faylda savollar topilmadi.",
+    "missing_plus": "❗ {id}-savol: To'g'ri javob (+) belgilanmagan.",
+    "multiple_plus": "❗ {id}-savol: {count} ta to'g'ri javob (+) belgilangan.",
+    "few_answers": "❗ {id}-savol: Javoblar soni kam.",
+    "orphan_image": "❗ {id}-qator: Rasm yoki formula savolga tegishli emas.",
+    "duplicate_question": "⚠️ {id}-savol: Takroriy savol.",
+    "duplicate_answer": "⚠️ {id}-savol: Javoblar bir xil."
+}
+
 COMMANDS_MENU = {
-    "start": "♻️ Botni ishga tushirish",
-    "help": "❓ Yordam va Qo'llanma",
-    "admin": "👨‍💻 Admin Panelga kirish"
+    "uz": {
+        "start": "♻️ Botni ishga tushirish",
+        "help": "❓ Yordam va Qo'llanma",
+        "admin": "👨‍💻 Admin"
+    },
+    "ru": {
+        "start": "♻️ Запустить бота",
+        "help": "❓ Помощь и инструкция",
+        "admin": "👨‍💻 Админ"
+    },
+    "en": {
+        "start": "♻️ Start the bot",
+        "help": "❓ Help and Guide",
+        "admin": "👨‍💻 Admin"
+    }
 }

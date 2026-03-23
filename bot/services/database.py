@@ -13,6 +13,7 @@ def init_db():
             id INTEGER PRIMARY KEY,
             full_name TEXT,
             username TEXT,
+            language TEXT DEFAULT 'uz',
             joined_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -22,6 +23,13 @@ def init_db():
         cursor.execute("ALTER TABLE users ADD COLUMN last_active TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     except sqlite3.OperationalError:
         pass # Column already exists
+    
+    # Migration: Add language if it exists in an older database
+    try:
+        cursor.execute("ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'uz'")
+    except sqlite3.OperationalError:
+        pass
+
     # Settings table: user_id | key | value
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS settings (
@@ -58,10 +66,39 @@ def add_user(user_id: int, full_name: str, username: str):
                 last_active = CURRENT_TIMESTAMP
         """, (user_id, full_name, username))
         conn.commit()
+    except sqlite3.OperationalError as e:
+        if "no column named language" in str(e).lower():
+            cursor.execute("ALTER TABLE users ADD COLUMN language TEXT DEFAULT 'uz'")
+            cursor.execute("""
+                INSERT INTO users (id, full_name, username, last_active) 
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ON CONFLICT(id) DO UPDATE SET 
+                    full_name = excluded.full_name,
+                    username = excluded.username,
+                    last_active = CURRENT_TIMESTAMP
+            """, (user_id, full_name, username))
+            conn.commit()
     except Exception as e:
         logging.error(f"Error adding/updating user: {e}")
     finally:
         conn.close()
+
+def get_user_language(user_id: int) -> str:
+    """Gets the language preference for a user."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT language FROM users WHERE id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else 'uz'
+
+def set_user_language(user_id: int, lang: str):
+    """Sets the language preference for a user."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE users SET language = ? WHERE id = ?", (lang, user_id))
+    conn.commit()
+    conn.close()
 
 def update_last_active(user_id: int):
     """Updates the last_active timestamp for a user."""
