@@ -20,28 +20,6 @@ from bot.services.database import (
     get_total_files_count,
     get_files_count_period
 )
-import os
-import asyncio
-import openpyxl
-from openpyxl import Workbook
-from datetime import datetime
-from aiogram import Router, F, Bot
-from aiogram.types import Message, CallbackQuery, FSInputFile
-from aiogram.filters import Command
-from aiogram.fsm.context import FSMContext
-from aiogram.fsm.state import State, StatesGroup
-from aiogram.exceptions import TelegramRetryAfter, TelegramForbiddenError, TelegramAPIError
-
-from bot.config import TEMP_DIR
-from bot.filters.admin_filter import AdminFilter
-from bot.services.database import (
-    get_users_count, 
-    get_all_users, 
-    get_active_users_count,
-    get_users_detailed,
-    get_total_files_count,
-    get_files_count_period
-)
 from bot.utils.lexicon import LEXICON
 from bot.keyboards.admin_kb import (
     get_admin_main_keyboard, 

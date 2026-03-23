@@ -2,26 +2,27 @@ import os
 import shutil
 from datetime import datetime
 from aiogram import Router, F, Bot
-from aiogram.types import Message, FSInputFile, CallbackQuery
-from aiogram.filters import Command, CommandStart
+from aiogram.types import Message, CallbackQuery, FSInputFile
+from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 
-from bot.config import TEMP_DIR, UPLOADS_DIR, ADMIN_IDS
+from bot.config import TEMP_DIR, UPLOADS_DIR
 from bot.utils.lexicon import LEXICON, ERROR_TEXTS
 from bot.services.database import (
     add_user, 
-    update_last_active, 
-    get_user_setting, 
+    get_user_language, 
+    set_user_language, 
+    update_last_active,
     update_user_setting,
+    get_user_setting,
     log_file_upload,
-    get_user_files_history,
-    set_user_language
+    get_user_files_history
 )
 from bot.keyboards.user_kb import (
+    get_language_keyboard, 
     get_main_keyboard, 
-    get_start_keyboard, 
     get_settings_keyboard,
-    get_lang_selection_keyboard
+    get_action_keyboard
 )
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
@@ -29,89 +30,72 @@ from bot.states import ValidatedFileState
 from bot.services.processor import Processor
 from bot.services.generator import DocxGenerator
 
-# Module-specific router
 router = Router()
 
-MAX_FILE_SIZE = 20 * 1024 * 1024  # 20 MB
+MAX_FILE_SIZE = 10 * 1024 * 1024 # 10MB
 
 @router.message(CommandStart())
-async def cmd_start(message: Message, state: FSMContext, lang: str):
+async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
-    
-    is_admin = message.from_user.id in ADMIN_IDS
-    text = LEXICON[lang]["user"]["welcome"] + "\n\n*(ID: `" + str(message.from_user.id) + "`)*"
+    lang = get_user_language(message.from_user.id)
     await message.answer(
-        text,
-        reply_markup=get_start_keyboard(lang=lang, is_admin=is_admin),
-        parse_mode="Markdown"
+        LEXICON[lang]["user"]["welcome"],
+        reply_markup=get_main_keyboard(lang=lang)
     )
 
-@router.message(Command("help"))
 @router.message(F.text.in_([LEXICON[l]["buttons"]["instructions_btn"] for l in LEXICON]))
-async def cmd_instructions(message: Message, lang: str):
-    await message.answer(LEXICON[lang]["user"]["instructions"])
+async def show_instructions(message: Message, lang: str):
+    await message.answer(LEXICON[lang]["user"]["instructions"], parse_mode="Markdown")
 
 @router.message(F.text.in_([LEXICON[l]["buttons"]["settings_btn"] for l in LEXICON]))
-async def handle_settings(message: Message, lang: str):
+async def show_settings(message: Message, lang: str):
     await message.answer(
-        LEXICON[lang]["user"]["lang_select"],
+        LEXICON[lang]["user"]["settings_welcome"],
         reply_markup=get_settings_keyboard(lang=lang)
     )
 
-@router.callback_query(F.data == "change_lang")
-async def process_change_lang(callback: CallbackQuery, lang: str):
+@router.callback_query(F.data == "set_lang")
+async def process_lang_setting(callback: CallbackQuery, lang: str):
     await callback.message.edit_text(
-        LEXICON[lang]["user"]["lang_select"],
-        reply_markup=get_lang_selection_keyboard()
-    )
-
-@router.callback_query(F.data.startswith("set_lang_"))
-async def process_set_lang(callback: CallbackQuery, state: FSMContext):
-    new_lang = callback.data.replace("set_lang_", "")
-    set_user_language(callback.from_user.id, new_lang)
-    
-    # Refresh start message with new language
-    is_admin = callback.from_user.id in ADMIN_IDS
-    await callback.message.delete()
-    await callback.message.answer(
-        LEXICON[new_lang]["user"]["lang_updated"],
-        reply_markup=get_start_keyboard(lang=new_lang, is_admin=is_admin)
+        LEXICON[lang]["user"]["choose_lang"],
+        reply_markup=get_language_keyboard()
     )
     await callback.answer()
 
-@router.message(F.text.in_([LEXICON[l]["buttons"]["admin_panel"] for l in LEXICON]))
-async def handle_admin_panel(message: Message, lang: str):
-    if message.from_user.id in ADMIN_IDS:
-        from bot.handlers.admin_handlers import cmd_admin
-        await cmd_admin(message, lang)
-    else:
-        await message.answer("❌ Admin only.")
-
-from aiogram.exceptions import TelegramBadRequest
-
-@router.callback_query(F.data.startswith("set_mode_"))
-async def process_settings_update(callback: CallbackQuery, lang: str):
-    new_mode = callback.data.replace("set_mode_", "")
-    update_user_setting(callback.from_user.id, "default_shuffle", new_mode)
+@router.callback_query(F.data.startswith("lang_"))
+async def process_lang_select(callback: CallbackQuery, state: FSMContext):
+    new_lang = callback.data.split("_")[1]
+    set_user_language(callback.from_user.id, new_lang)
     
-    await callback.answer(LEXICON[lang]["user"]["settings_updated"])
-    # Refresh keyboard
-    try:
-        await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(lang=lang))
-    except TelegramBadRequest as e:
-        if "message is not modified" in str(e):
-            pass # Ignore if keyboard is already the same
-        else:
-            raise e
+    await callback.message.delete()
+    await callback.message.answer(
+        LEXICON[new_lang]["user"]["settings_updated"],
+        reply_markup=get_main_keyboard(lang=new_lang)
+    )
+    await callback.answer()
+
+@router.callback_query(F.data == "set_mode")
+async def process_mode_select(callback: CallbackQuery, lang: str):
+    # Toggle or choice logic here
+    await callback.answer("Hozircha faqat standart rejim mavjud.")
+
+@router.callback_query(F.data == "settings_back")
+async def back_to_settings(callback: CallbackQuery, lang: str):
+    await callback.message.edit_text(
+        LEXICON[lang]["user"]["settings_welcome"],
+        reply_markup=get_settings_keyboard(lang=lang)
+    )
+    await callback.answer()
 
 @router.message(F.document)
-async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: str):
+async def handle_document(message: Message, bot: Bot, lang: str, state: FSMContext):
     document = message.document
 
     # 1. Extension check
-    if not document.file_name.lower().endswith('.docx'):
-        await message.answer(LEXICON[lang]["user"]["wrong_ext"])
+    ext = document.file_name.lower().split('.')[-1]
+    if ext not in ['docx', 'xlsx']:
+        await message.answer(ERROR_TEXTS["no_questions"])
         return
 
     # 2. Size check
@@ -130,7 +114,11 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: s
         await bot.download(document, destination=file_path)
         
         # 4. Parse Document
-        parser = DocxParser(file_path)
+        if file_path.endswith('.xlsx'):
+            from bot.services.parser import XlsxParser
+            parser = XlsxParser(file_path)
+        else:
+            parser = DocxParser(file_path)
         blocks, parse_errors = parser.parse()
         
         # 5. Validate Blocks
@@ -144,6 +132,7 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: s
             report_filename = f"{name}_xatolar{ext}"
             report_path = os.path.join(TEMP_DIR, f"report_{message.from_user.id}_{report_filename}")
             
+            # Error report always Docx for now
             generator = DocxGenerator(file_path)
             generator.generate_error_report(invalid_with_errors, report_path)
             
@@ -153,84 +142,60 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: s
                 caption=LEXICON[lang]["user"]["error_report_sent"]
             )
             os.remove(report_path)
-            
-            admin_alert = (
-                f"🚨 **Xatoli fayl yuborildi!** (Errors found)\n\n"
-                f"User: {message.from_user.full_name} (@{message.from_user.username})\n"
-                f"Errors: {len(invalid_with_errors)}\n"
-            )
-            for admin_id in ADMIN_IDS:
-                try:
-                    await bot.send_message(admin_id, admin_alert)
-                except: pass
 
         if not valid_blocks:
-            await message.answer(ERROR_TEXTS["no_questions"]) # Currently unified
+            await message.answer(ERROR_TEXTS["no_questions"])
             if os.path.exists(file_path):
                 os.remove(file_path)
             return
 
         # 7. Prepare 'Clean' Source for Processed Flow
         if invalid_with_errors:
-            # We must create a temporary file with ONLY valid blocks 
-            # so the Processor doesn't re-encounter invalid ones.
-            clean_path = os.path.join(TEMP_DIR, f"clean_{message.from_user.id}_{document.file_name}")
-            generator = DocxGenerator(file_path)
-            generator.generate(valid_blocks, clean_path)
+            clean_filename = f"clean_{document.file_name}"
+            clean_path = os.path.join(TEMP_DIR, f"{message.from_user.id}_{clean_filename}")
             
-            # Replace file_path with clean one
-            os.remove(file_path)
-            file_path = clean_path
-            
-            await message.answer(
-                LEXICON[lang]["user"]["split_results"].format(valid=len(valid_blocks), invalid=len(invalid_with_errors)),
-                parse_mode="Markdown"
-            )
+            # For now generator only supports docx clean output
+            # If input was Xlsx, we might want to convert to Docx here or keep blocks
+            # Let's just use the blocks in memory for handle_action
+            pass 
 
-        # 8. Success -> Set State and Show Keyboard
-        # Save to permanent storage for history
-        perma_path = os.path.join(UPLOADS_DIR, f"{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{document.file_name}")
-        shutil.copy2(file_path, perma_path)
-        log_file_upload(message.from_user.id, document.file_name, perma_path)
-
-        await state.update_data(file_path=file_path, original_filename=document.file_name)
+        # 8. Save State
+        await state.update_data(
+            file_path=file_path, 
+            original_filename=document.file_name
+        )
         await state.set_state(ValidatedFileState.waiting_for_action)
 
+        # 9. Offer Actions
         await message.answer(
-            LEXICON[lang]["user"]["success"].format(filename=document.file_name),
-            reply_markup=get_main_keyboard(lang=lang),
-            parse_mode="Markdown"
+            LEXICON[lang]["user"]["success_upload"].format(count=len(valid_blocks)),
+            reply_markup=get_action_keyboard(lang=lang)
         )
 
-    except Exception as e:
-        await message.answer(LEXICON[lang]["user"]["error"].format(error=str(e)))
+        # 10. Log to History
+        perma_path = os.path.join(UPLOADS_DIR, f"{message.from_user.id}_{int(datetime.now().timestamp())}_{document.file_name}")
+        shutil.copy(file_path, perma_path)
+        log_file_upload(message.from_user.id, document.file_name, perma_path)
 
-@router.message(ValidatedFileState.waiting_for_action)
+    except Exception as e:
+        await message.answer(f"❌ Xatolik: {e}")
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
+
+@router.message(ValidatedFileState.waiting_for_action, F.text)
 async def handle_action(message: Message, state: FSMContext, lang: str):
     data = await state.get_data()
     file_path = data.get("file_path")
     
     if not file_path or not os.path.exists(file_path):
-        await message.answer("❌ Fayl topilmadi. Iltimos, qaytadan yuboring.")
+        await message.answer("❌ Fayl topilmadi, iltimos qaytadan yuboring.")
         await state.clear()
         return
 
     text = message.text
-    # Handle Back
-    if text in [LEXICON[l]["buttons"]["back"] for l in LEXICON]:
-        await state.clear()
-        is_admin = message.from_user.id in ADMIN_IDS
-        await message.answer(LEXICON[lang]["user"]["welcome"], reply_markup=get_start_keyboard(lang=lang, is_admin=is_admin))
-        # Cleanup file if needed
-        if file_path and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except:
-                pass
-        return
-
-    # Map buttons to standardized keys for processor
     processor_action = None
+    
+    # Map text back to action key
     for l in LEXICON:
         if text == LEXICON[l]["buttons"]["shuffle"]:
             processor_action = "shuffle"
@@ -250,7 +215,12 @@ async def handle_action(message: Message, state: FSMContext, lang: str):
 
     try:
         # 1. Parse again
-        parser = DocxParser(file_path)
+        if file_path.endswith('.xlsx'):
+            from bot.services.parser import XlsxParser
+            parser = XlsxParser(file_path)
+        else:
+            parser = DocxParser(file_path)
+            
         blocks, _ = parser.parse()
         
         # 2. Process
@@ -262,6 +232,8 @@ async def handle_action(message: Message, state: FSMContext, lang: str):
         name, ext = os.path.splitext(orig_name)
         
         suffix = "_result"
+        if file_path.endswith('.xlsx'):
+             ext = ".docx" # Always generate Docx for now
             
         new_filename = f"{name}{suffix}{ext}"
         output_path = os.path.join(TEMP_DIR, f"gen_{message.from_user.id}_{new_filename}")
@@ -277,10 +249,17 @@ async def handle_action(message: Message, state: FSMContext, lang: str):
         
         await message.answer_document(doc_file, caption=caption)
         
-        # 5. Cleanup New File
-        os.remove(output_path)
-        
+        # 5. Cleanup
+        if os.path.exists(output_path):
+            os.remove(output_path)
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            
+        await state.clear()
+            
     except Exception as e:
+        if 'file_path' in locals() and os.path.exists(file_path):
+            os.remove(file_path)
         await message.answer(f"❌ Xatolik: {e}")
 
 @router.message(F.text.in_([LEXICON[l]["buttons"]["history"] for l in LEXICON]))
@@ -308,29 +287,28 @@ async def show_history(message: Message, lang: str):
 @router.callback_query(F.data.startswith("hist_"))
 async def process_history_select(callback: CallbackQuery, state: FSMContext, lang: str):
     file_id = int(callback.data.replace("hist_", ""))
+    from bot.services.database import get_file_by_id
+    file_data = get_file_by_id(file_id)
     
-    # Get file path from DB
-    import sqlite3
-    from bot.services.database import DB_NAME
-    conn = sqlite3.connect(DB_NAME)
-    cursor = conn.cursor()
-    cursor.execute("SELECT storage_path, filename FROM files_log WHERE id = ?", (file_id,))
-    row = cursor.fetchone()
-    conn.close()
-    
-    if not row or not os.path.exists(row[0]):
-        await callback.answer("❌ Fayl serverdan o'chirilgan yoki topilmadi.", show_alert=True)
+    if not file_data:
+        await callback.answer(LEXICON[lang]["user"]["file_not_found"])
         return
         
-    perma_path, filename = row
+    _, filename, storage_path, _ = file_data
     
-    # Store in state
-    await state.update_data(file_path=perma_path, original_filename=filename)
+    if not storage_path or not os.path.exists(storage_path):
+        await callback.answer(LEXICON[lang]["user"]["file_not_found"])
+        return
+        
+    # Copy to TEMP for processing
+    temp_path = os.path.join(TEMP_DIR, f"{callback.from_user.id}_{filename}")
+    shutil.copy(storage_path, temp_path)
+    
+    await state.update_data(file_path=temp_path, original_filename=filename)
     await state.set_state(ValidatedFileState.waiting_for_action)
     
     await callback.message.answer(
-        LEXICON[lang]["user"]["success"].format(filename=filename),
-        reply_markup=get_main_keyboard(lang=lang),
-        parse_mode="Markdown"
+        LEXICON[lang]["user"]["history_reprocess"].format(filename=filename),
+        reply_markup=get_action_keyboard(lang=lang)
     )
     await callback.answer()
