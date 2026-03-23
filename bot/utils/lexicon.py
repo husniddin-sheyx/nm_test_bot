@@ -44,10 +44,12 @@ ADMIN_TEXTS = {
              "📅 Bugun faol: **{today}** ta\n"
              "🗓 Haftalik faol: **{week}** ta",
     "broadcast_start": "📢 Hammaga yuboriladigan xabarni yozing (matn, rasm, video...):",
+    "broadcast_preview": "👆 **Xabar ko'rinishi yuqorida.**\n\nUni barcha foydalanuvchilarga yuborishni tasdiqlaysizmi?",
     "broadcast_confirm": "✅ Xabar yuborish boshlandi...",
     "broadcast_done": "✅ Xabar yuborildi!\n\n"
                      "Yuborildi: {count} ta\n"
-                     "Bloklaganlar: {blocked} ta"
+                     "Bloklaganlar: {blocked} ta",
+    "broadcast_cancelled": "❌ Xabar yuborish bekor qilindi."
 }
 
 # Validation & Parser Errors
@@ -76,7 +78,9 @@ BUTTONS = {
         "stats": "📊 Statistika",
         "broadcast": "📢 Xabar yuborish",
         "export": "📁 Excel yuklab olish",
-        "back": "🔙 Orqaga"
+        "back": "🔙 Orqaga",
+        "confirm": "✅ Tasdiqlash",
+        "cancel": "❌ Bekor qilish"
     }
 }
 

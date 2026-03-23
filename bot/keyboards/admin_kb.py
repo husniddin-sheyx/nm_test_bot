@@ -19,3 +19,13 @@ def get_admin_back_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text=BUTTONS["admin"]["back"], callback_data="admin_main")]
     ])
+
+def get_admin_broadcast_confirm_keyboard() -> InlineKeyboardMarkup:
+    """Keyboard for broadcast confirmation."""
+    buttons = [
+        [
+            InlineKeyboardButton(text=BUTTONS["admin"]["confirm"], callback_data="admin_broadcast_confirm"),
+            InlineKeyboardButton(text=BUTTONS["admin"]["cancel"], callback_data="admin_broadcast_cancel")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

@@ -17,7 +17,11 @@ from bot.services.database import (
     get_users_detailed
 )
 from bot.utils.lexicon import ADMIN_TEXTS, BUTTONS
-from bot.keyboards.admin_kb import get_admin_main_keyboard, get_admin_back_keyboard
+from bot.keyboards.admin_kb import (
+    get_admin_main_keyboard, 
+    get_admin_back_keyboard,
+    get_admin_broadcast_confirm_keyboard
+)
 
 admin_router = Router()
 admin_router.message.filter(AdminFilter())
@@ -122,25 +126,58 @@ async def broadcast_start_callback(callback: CallbackQuery, state: FSMContext):
 # --- Broadcast Flow ---
 
 @admin_router.message(BroadcastState.waiting_for_message)
-async def process_broadcast(message: Message, state: FSMContext, bot: Bot):
-    if message.text == BUTTONS["admin"]["back"]: # This might not work if they use text, but we have the button
-        await state.clear()
+async def process_broadcast_preview(message: Message, state: FSMContext):
+    # Store the message ID for copying
+    await state.update_data(broadcast_message_id=message.message_id, from_chat_id=message.chat.id)
+    
+    # Show preview
+    await message.send_copy(chat_id=message.chat.id)
+    await message.answer(
+        ADMIN_TEXTS["broadcast_preview"],
+        reply_markup=get_admin_broadcast_confirm_keyboard(),
+        parse_mode="Markdown"
+    )
+
+@admin_router.callback_query(F.data == "admin_broadcast_confirm")
+async def process_broadcast_confirm(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    data = await state.get_data()
+    msg_id = data.get("broadcast_message_id")
+    from_chat = data.get("from_chat_id")
+    
+    if not msg_id:
+        await callback.answer("❌ Xabar topilmadi.")
         return
 
-    msg = await message.answer(ADMIN_TEXTS["broadcast_confirm"])
+    await callback.message.edit_text(ADMIN_TEXTS["broadcast_confirm"])
+    
     users = get_all_users()
     count = 0
     blocked = 0
     
     for (user_id,) in users:
         try:
-            await message.send_copy(chat_id=user_id)
+            # We use copy_message because it's more universal for FSM-stored IDs
+            await bot.copy_message(
+                chat_id=user_id,
+                from_chat_id=from_chat,
+                message_id=msg_id
+            )
             count += 1
-        except:
+        except Exception:
             blocked += 1
             
-    await msg.edit_text(
+    await callback.message.answer(
         ADMIN_TEXTS["broadcast_done"].format(count=count, blocked=blocked),
         reply_markup=get_admin_main_keyboard()
     )
     await state.clear()
+    await callback.answer()
+
+@admin_router.callback_query(F.data == "admin_broadcast_cancel")
+async def process_broadcast_cancel(callback: CallbackQuery, state: FSMContext):
+    await state.clear()
+    await callback.message.edit_text(
+        ADMIN_TEXTS["broadcast_cancelled"],
+        reply_markup=get_admin_main_keyboard()
+    )
+    await callback.answer()
