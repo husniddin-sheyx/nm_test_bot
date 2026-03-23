@@ -200,12 +200,16 @@ async def process_broadcast_confirm(callback: CallbackQuery, state: FSMContext, 
         except TelegramForbiddenError: blocked += 1
         except: errors += 1
             
-        if i % 100 == 0:
+        if i % 20 == 0:
             try: await callback.message.edit_text(f"⏳ {i}/{total_users}")
             except: pass
 
     await callback.message.answer(
-        LEXICON[lang]["admin"]["broadcast_done"].format(count=count, blocked=blocked),
+        LEXICON[lang]["admin"]["broadcast_done"].format(
+            count=count, 
+            blocked=blocked,
+            errors=errors
+        ),
         reply_markup=get_admin_main_keyboard(lang=lang),
         parse_mode="Markdown"
     )

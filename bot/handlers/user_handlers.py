@@ -91,14 +91,14 @@ async def handle_admin_panel(message: Message, lang: str):
 from aiogram.exceptions import TelegramBadRequest
 
 @router.callback_query(F.data.startswith("set_mode_"))
-async def process_settings_update(callback: CallbackQuery):
+async def process_settings_update(callback: CallbackQuery, lang: str):
     new_mode = callback.data.replace("set_mode_", "")
     update_user_setting(callback.from_user.id, "default_shuffle", new_mode)
     
-    await callback.answer(f"✅ Standart usul {new_mode} ga o'zgartirildi.")
+    await callback.answer(LEXICON[lang]["user"]["settings_updated"])
     # Refresh keyboard
     try:
-        await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(new_mode))
+        await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(lang=lang))
     except TelegramBadRequest as e:
         if "message is not modified" in str(e):
             pass # Ignore if keyboard is already the same
@@ -154,14 +154,10 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext, lang: s
             )
             os.remove(report_path)
             
-            # --- Admin Alert for Errors ---
-            from bot.config import ADMIN_IDS
-            error_summary = "\n".join([f"Q{q.id}: {', '.join(errs)}" for q, errs in invalid_with_errors[:5]])
             admin_alert = (
-                f"🚨 **Xatoli fayl yuborildi!**\n\n"
-                f"Foydalanuvchi: {message.from_user.full_name} (@{message.from_user.username})\n"
-                f"Xatolar: {len(invalid_with_errors)} ta\n\n"
-                f"Foydalanuvchiga hisobot yuborildi."
+                f"🚨 **Xatoli fayl yuborildi!** (Errors found)\n\n"
+                f"User: {message.from_user.full_name} (@{message.from_user.username})\n"
+                f"Errors: {len(invalid_with_errors)}\n"
             )
             for admin_id in ADMIN_IDS:
                 try:
@@ -233,21 +229,20 @@ async def handle_action(message: Message, state: FSMContext, lang: str):
                 pass
         return
 
-    # Map buttons to text keys for processor
+    # Map buttons to standardized keys for processor
     processor_action = None
     for l in LEXICON:
         if text == LEXICON[l]["buttons"]["shuffle"]:
-            processor_action = LEXICON["uz"]["buttons"]["shuffle"] # Use Uz keys for core logic 
+            processor_action = "shuffle"
             break
         elif text == LEXICON[l]["buttons"]["shuffle_answers"]:
-            processor_action = LEXICON["uz"]["buttons"]["shuffle_answers"]
+            processor_action = "shuffle_answers"
             break
         elif text == LEXICON[l]["buttons"]["extract"]:
-            processor_action = LEXICON["uz"]["buttons"]["extract"]
+            processor_action = "extract"
             break
     
     if not processor_action:
-        await message.answer("Select one:")
         return
 
     await message.answer("⏳ ...")
@@ -277,7 +272,7 @@ async def handle_action(message: Message, state: FSMContext, lang: str):
         # 4. Send File
         doc_file = FSInputFile(output_path, filename=new_filename)
         caption = "✅" 
-        if processor_action == LEXICON["uz"]["buttons"]["extract"]:
+        if processor_action == "extract":
             caption += " (Pluses)"
         
         await message.answer_document(doc_file, caption=caption)
@@ -334,8 +329,8 @@ async def process_history_select(callback: CallbackQuery, state: FSMContext, lan
     await state.set_state(ValidatedFileState.waiting_for_action)
     
     await callback.message.answer(
-        f"📂 **{filename}** tanlandi.\n\nEndi kerakli amalni tanlang:",
-        reply_markup=get_main_keyboard(),
+        LEXICON[lang]["user"]["success"].format(filename=filename),
+        reply_markup=get_main_keyboard(lang=lang),
         parse_mode="Markdown"
     )
     await callback.answer()

@@ -7,20 +7,21 @@ LEXICON = {
                        "📌 **Talablar:**\n"
                        "- Fayl formati: .docx\n"
                        "- Har bir savol alohida blok bo'lishi kerak\n"
-                       "- Javoblar `+` (to'g'ri) va `=` (noto'g'ri) bilan boshlanishi kerak",
+                       "- Javoblar `+` yoki `=` (to'g'ri) va `-` (noto'g'ri) bilan boshlanishi kerak",
             "wrong_ext": "❌ Iltimos, faqat **.docx** formatidagi faylni yuboring.",
             "too_large": "❌ Fayl hajmi juda katta (maksimal 20MB).",
             "processing": "⏳ Fayl qabul qilindi. Tekshirilmoqda...",
             "success": "✅ **Fayl muvaffaqiyatli saqlandi!**\n"
                        "📁 Fayl nomi: `{filename}`",
             "error": "❌ Faylni yuklashda xatolik yuz berdi: {error}",
-            "instructions": "📖 **Qo'llanma:** Savol `?` bilan, to'g'ri javob `+` bilan, noto'g'ri javob `-` yoki `=` bilan boshlanishi kerak.",
+            "instructions": "📖 **Qo'llanma:** Savol `?` bilan, to'g'ri javoblar `+` yoki `=` bilan, noto'g'ri javoblar `-` bilan boshlanishi kerak.",
             "split_results": "⚠️ **Xatolar topildi!**\n\nMuvaffaqiyatli: **{valid}**\nXatoli: **{invalid}**",
             "error_report_sent": "📁 Xatolar hisoboti yuborildi.",
             "history_welcome": "📂 **Oxirgi fayllaringiz:**",
             "no_history": "📭 Sizda yuklangan fayllar yo'q.",
             "lang_select": "🌐 **Tilni tanlang / Выберите язык / Select language**",
-            "lang_updated": "✅ Til muvaffaqiyatli o'zgartirildi!"
+            "lang_updated": "✅ Til muvaffaqiyatli o'zgartirildi!",
+            "settings_updated": "✅ Sozlamalar yangilandi!"
         },
         "admin": {
             "welcome": "👨‍💻 **Admin Panel**",
@@ -28,7 +29,7 @@ LEXICON = {
             "broadcast_start": "📢 Xabar matnini yuboring:",
             "broadcast_preview": "👆 Xabar ko'rinishi yuqorida. Tasdiqlaysizmi?",
             "broadcast_confirm": "✅ Yuborish boshlandi...",
-            "broadcast_done": "✅ Yuborildi: {count}\nBloklangan: {blocked}",
+            "broadcast_done": "✅ Yuborildi: {count}\n🚫 Bloklangan: {blocked}\n⚠️ Xatolar: {errors}",
             "broadcast_cancelled": "❌ Bekor qilindi."
         },
         "buttons": {
@@ -59,7 +60,8 @@ LEXICON = {
             "history_welcome": "📂 **Ваши последние файлы:**",
             "no_history": "📭 У вас нет загруженных файлов.",
             "lang_select": "🌐 **Выберите язык**",
-            "lang_updated": "✅ Язык успешно изменен!"
+            "lang_updated": "✅ Язык успешно изменен!",
+            "settings_updated": "✅ Настройки обновлены!"
         },
         "admin": {
             "welcome": "👨‍💻 **Админ Панель**",
@@ -67,7 +69,7 @@ LEXICON = {
             "broadcast_start": "📢 Отправьте текст сообщения:",
             "broadcast_preview": "👆 Предпросмотр выше. Подтверждаете?",
             "broadcast_confirm": "✅ Рассылка началась...",
-            "broadcast_done": "✅ Отправлено: {count}\nЗаблокировано: {blocked}",
+            "broadcast_done": "✅ Отправлено: {count}\n🚫 Заблокировано: {blocked}\n⚠️ Ошибок: {errors}",
             "broadcast_cancelled": "❌ Отменено."
         },
         "buttons": {
@@ -98,7 +100,8 @@ LEXICON = {
             "history_welcome": "📂 **Your recent files:**",
             "no_history": "📭 No uploaded files found.",
             "lang_select": "🌐 **Select language**",
-            "lang_updated": "✅ Language updated successfully!"
+            "lang_updated": "✅ Language updated successfully!",
+            "settings_updated": "✅ Settings updated!"
         },
         "admin": {
             "welcome": "👨‍💻 **Admin Panel**",
@@ -106,7 +109,7 @@ LEXICON = {
             "broadcast_start": "📢 Send the message text:",
             "broadcast_preview": "👆 Preview above. Confirm?",
             "broadcast_confirm": "✅ Sending started...",
-            "broadcast_done": "✅ Sent: {count}\nBlocked: {blocked}",
+            "broadcast_done": "✅ Sent: {count}\n🚫 Blocked: {blocked}\n⚠️ Errors: {errors}",
             "broadcast_cancelled": "❌ Cancelled."
         },
         "buttons": {

@@ -12,8 +12,8 @@ class DocxParser:
         """
         Parses the document into QuestionBlocks using markers:
         ? - Question start
-        + - Correct answer
-        - or = - Incorrect answer
+        + or = - Correct answer
+        - - Incorrect answer
         """
         current_q_paragraphs = []
         current_answers = []
@@ -51,15 +51,15 @@ class DocxParser:
             
             # 1. Identify Markers
             is_question = text.startswith("?")
-            is_plus = text.startswith("+")
-            is_minus_equal = text.startswith("-") or text.startswith("=")
+            is_plus_equal = text.startswith("+") or text.startswith("=")
+            is_minus = text.startswith("-")
             
             if is_question:
                 save_current_question()
                 current_q_paragraphs.append(para)
-            elif is_plus or is_minus_equal:
+            elif is_plus_equal or is_minus:
                 save_current_answer()
-                current_ans_is_correct = is_plus
+                current_ans_is_correct = is_plus_equal
                 current_ans_paragraphs.append(para)
             else:
                 # Continuation of current block

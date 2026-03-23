@@ -12,10 +12,10 @@ class DocxGenerator:
         self._clear_body()
 
     def _clear_body(self):
-        # Simplest way to clear body while keeping relationships is to remove all paragraphs/tables
-        # But efficiently:
-        for element in self.doc.element.body:
-            self.doc.element.body.remove(element)
+        # We must use list() to safely remove while iterating
+        body = self.doc.element.body
+        for element in list(body):
+            body.remove(element)
 
     def generate(self, blocks: List[QuestionBlock], output_path: str):
         """

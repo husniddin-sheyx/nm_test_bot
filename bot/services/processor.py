@@ -1,7 +1,6 @@
 import random
 from typing import List
 from bot.structure import QuestionBlock
-from bot.utils.lexicon import BUTTONS
 
 class Processor:
     def __init__(self, blocks: List[QuestionBlock]):
@@ -9,14 +8,14 @@ class Processor:
 
     def process(self, action: str) -> List[QuestionBlock]:
         """
-        Processes the blocks based on the action (Shuffle or Extract).
-        Returns the modified list of blocks.
+        Processes the blocks based on standardized action keys:
+        'shuffle', 'shuffle_answers', 'extract'
         """
-        if action == BUTTONS["user"]["shuffle"]:
+        if action == "shuffle":
             return self._shuffle(shuffle_questions=True)
-        elif action == BUTTONS["user"]["shuffle_answers"]:
+        elif action == "shuffle_answers":
             return self._shuffle(shuffle_questions=False)
-        elif action == BUTTONS["user"]["extract"]:
+        elif action == "extract":
             return self._extract_correct()
         return self.blocks
 
@@ -25,15 +24,11 @@ class Processor:
         1. Shuffle questions order (Optional).
         2. Shuffle answers within each question.
         """
+        shuffled_questions = self.blocks.copy()
         if shuffle_questions:
-            shuffled_questions = self.blocks.copy()
             random.shuffle(shuffled_questions)
-        else:
-            # Keep original question order
-            shuffled_questions = self.blocks.copy()
         
         for q in shuffled_questions:
-            # Create a copy of answers to shuffle
             shuffled_answers = q.answers.copy()
             random.shuffle(shuffled_answers)
             q.answers = shuffled_answers
@@ -46,9 +41,9 @@ class Processor:
         """
         processed_questions = []
         for q in self.blocks:
+            # We look for a.is_correct which is set by the parser
             correct_answers = [a for a in q.answers if a.is_correct]
             if correct_answers:
-                # We modify the block to only have correct answers
                 q.answers = correct_answers
                 processed_questions.append(q)
         return processed_questions
