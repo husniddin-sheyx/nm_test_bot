@@ -56,6 +56,8 @@ async def handle_admin_panel(message: Message):
     else:
         await message.answer("❌ Bu tugma faqat adminlar uchun.")
 
+from aiogram.exceptions import TelegramBadRequest
+
 @router.callback_query(F.data.startswith("set_mode_"))
 async def process_settings_update(callback: CallbackQuery):
     new_mode = callback.data.replace("set_mode_", "")
@@ -63,7 +65,13 @@ async def process_settings_update(callback: CallbackQuery):
     
     await callback.answer(f"✅ Standart usul {new_mode} ga o'zgartirildi.")
     # Refresh keyboard
-    await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(new_mode))
+    try:
+        await callback.message.edit_reply_markup(reply_markup=get_settings_keyboard(new_mode))
+    except TelegramBadRequest as e:
+        if "message is not modified" in str(e):
+            pass # Ignore if keyboard is already the same
+        else:
+            raise e
 
 @router.message(F.document)
 async def handle_document(message: Message, bot: Bot, state: FSMContext):
