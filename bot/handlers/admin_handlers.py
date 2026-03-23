@@ -1,4 +1,5 @@
 import os
+import asyncio
 import openpyxl
 from openpyxl import Workbook
 from datetime import datetime
@@ -7,6 +8,7 @@ from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from aiogram.exceptions import TelegramRetryAfter, TelegramForbiddenError, TelegramAPIError
 
 from bot.config import TEMP_DIR
 from bot.filters.admin_filter import AdminFilter
@@ -14,7 +16,9 @@ from bot.services.database import (
     get_users_count, 
     get_all_users, 
     get_active_users_count,
-    get_users_detailed
+    get_users_detailed,
+    get_total_files_count,
+    get_files_count_period
 )
 from bot.utils.lexicon import ADMIN_TEXTS, BUTTONS
 from bot.keyboards.admin_kb import (
@@ -33,10 +37,20 @@ class BroadcastState(StatesGroup):
 # --- Shared Logic Functions ---
 
 async def get_stats_text() -> str:
-    total = get_users_count()
-    today = get_active_users_count(days=1)
-    week = get_active_users_count(days=7)
-    return ADMIN_TEXTS["stats"].format(total=total, today=today, week=week)
+    total_users = get_users_count()
+    active_today = get_active_users_count(days=1)
+    
+    total_files = get_total_files_count()
+    files_today = get_files_count_period(days=1)
+    files_week = get_files_count_period(days=7)
+    
+    return ADMIN_TEXTS["stats"].format(
+        total=total_users, 
+        today=active_today, 
+        total_files=total_files,
+        files_today=files_today,
+        files_week=files_week
+    )
 
 async def generate_user_export() -> str:
     users = get_users_detailed()
@@ -148,27 +162,58 @@ async def process_broadcast_confirm(callback: CallbackQuery, state: FSMContext, 
         await callback.answer("❌ Xabar topilmadi.")
         return
 
-    await callback.message.edit_text(ADMIN_TEXTS["broadcast_confirm"])
-    
     users = get_all_users()
+    total_users = len(users)
     count = 0
     blocked = 0
+    errors = 0
     
-    for (user_id,) in users:
+    await callback.message.edit_text(f"⏳ Yuborilmoqda: 0/{total_users}...")
+    
+    for i, (user_id,) in enumerate(users, 1):
         try:
-            # We use copy_message because it's more universal for FSM-stored IDs
+            # Safe copying
             await bot.copy_message(
                 chat_id=user_id,
                 from_chat_id=from_chat,
                 message_id=msg_id
             )
             count += 1
-        except Exception:
-            blocked += 1
             
+            # Anti-flood delay: 20 messages per second (max is 30)
+            await asyncio.sleep(0.05)
+            
+        except TelegramRetryAfter as e:
+            # Respect Telegram's request to wait
+            await asyncio.sleep(e.retry_after)
+            # Try again once after waiting
+            try:
+                await bot.copy_message(chat_id=user_id, from_chat_id=from_chat, message_id=msg_id)
+                count += 1
+            except:
+                errors += 1
+                
+        except TelegramForbiddenError:
+            # Bot was blocked by user
+            blocked += 1
+        except TelegramAPIError:
+            # Other Telegram errors
+            errors += 1
+        except Exception:
+            errors += 1
+            
+        # Update status every 50 users to show progress
+        if i % 50 == 0:
+            try:
+                await callback.message.edit_text(f"⏳ Yuborilmoqda: {i}/{total_users}...")
+            except:
+                pass # Avoid 'message is not modified' error
+
     await callback.message.answer(
-        ADMIN_TEXTS["broadcast_done"].format(count=count, blocked=blocked),
-        reply_markup=get_admin_main_keyboard()
+        ADMIN_TEXTS["broadcast_done"].format(count=count, blocked=blocked) + 
+        (f"\n❌ Xatoliklar: {errors}" if errors > 0 else ""),
+        reply_markup=get_admin_main_keyboard(),
+        parse_mode="Markdown"
     )
     await state.clear()
     await callback.answer()

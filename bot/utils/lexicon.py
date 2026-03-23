@@ -33,16 +33,21 @@ USER_TEXTS = {
                      "Muvaffaqiyatli tekshirilgan savollar: **{valid}** ta.\n"
                      "Xatosi bor savollar: **{invalid}** ta.\n\n"
                      "Siz muvaffaqiyatli savollarni qayta ishlashingiz mumkin. Xatolar esa alohida faylda yuborildi.",
-    "error_report_sent": "📁 **Xatolar hisoboti yuborildi.** Iltimos, ushbu faylni ochib, xatolarni tuzating va qayta yuboring."
+    "error_report_sent": "📁 **Xatolar hisoboti yuborildi.** Iltimos, ushbu faylni ochib, xatolarni tuzating va qayta yuboring.",
+    "history_welcome": "📂 **Siz yuklagan oxirgi fayllar:**\n\nQayta ishlash uchun faylni tanlang:",
+    "no_history": "📭 Siz hali birorta ham fayl yuklamagansiz."
 }
 
 # Admin Interface Texts (Placeholder for future)
 ADMIN_TEXTS = {
     "welcome": "👨‍💻 **Admin Panel (V5.0)**\n\nQuyidagi tugmalar orqali botni boshqarishingiz mumkin:",
     "stats": "📊 **Bot Statistikasi**\n\n"
-             "👥 Jami: **{total}** ta\n"
-             "📅 Bugun faol: **{today}** ta\n"
-             "🗓 Haftalik faol: **{week}** ta",
+             "👥 Jami foydalanuvchilar: **{total}** ta\n"
+             "📅 Bugun faol: **{today}** ta\n\n"
+             "📄 **Fayllar statistikasi:**\n"
+             "📁 Jami qayta ishlangan: **{total_files}** ta\n"
+             "🕒 Bugun: **{files_today}** ta\n"
+             "🗓 Shu haftada: **{files_week}** ta",
     "broadcast_start": "📢 Hammaga yuboriladigan xabarni yozing (matn, rasm, video...):",
     "broadcast_preview": "👆 **Xabar ko'rinishi yuqorida.**\n\nUni barcha foydalanuvchilarga yuborishni tasdiqlaysizmi?",
     "broadcast_confirm": "✅ Xabar yuborish boshlandi...",
@@ -72,6 +77,7 @@ BUTTONS = {
         "back": "🔙 Boshiga qaytish",
         "instructions_btn": "📚 Qo'llanma",
         "settings_btn": "⚙️ Sozlamalar",
+        "history": "📂 Mening fayllarim",
         "admin_panel": "👨‍💻 Admin Panel"
     },
     "admin": {

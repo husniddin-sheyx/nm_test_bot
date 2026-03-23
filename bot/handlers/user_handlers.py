@@ -1,18 +1,27 @@
 import os
+import shutil
+from datetime import datetime
 from aiogram import Router, F, Bot
 from aiogram.types import Message, FSInputFile, CallbackQuery
 from aiogram.filters import Command, CommandStart
 from aiogram.fsm.context import FSMContext
-from bot.config import TEMP_DIR, ADMIN_IDS
+
+from bot.config import TEMP_DIR, UPLOADS_DIR, ADMIN_IDS
 from bot.utils.lexicon import USER_TEXTS, BUTTONS, ERROR_TEXTS
-from bot.services.database import add_user, update_last_active, get_user_setting, update_user_setting
+from bot.services.database import (
+    add_user, 
+    update_last_active, 
+    get_user_setting, 
+    update_user_setting,
+    log_file_upload,
+    get_user_files_history
+)
 from bot.keyboards.user_kb import get_main_keyboard, get_start_keyboard, get_settings_keyboard
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
 from bot.states import ValidatedFileState
 from bot.services.processor import Processor
 from bot.services.generator import DocxGenerator
-from bot.services.database import add_user, update_last_active
 
 # Module-specific router
 router = Router()
@@ -160,6 +169,11 @@ async def handle_document(message: Message, bot: Bot, state: FSMContext):
             )
 
         # 8. Success -> Set State and Show Keyboard
+        # Save to permanent storage for history
+        perma_path = os.path.join(UPLOADS_DIR, f"{message.from_user.id}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{document.file_name}")
+        shutil.copy2(file_path, perma_path)
+        log_file_upload(message.from_user.id, document.file_name, perma_path)
+
         await state.update_data(file_path=file_path, original_filename=document.file_name)
         await state.set_state(ValidatedFileState.waiting_for_action)
 
@@ -247,3 +261,55 @@ async def handle_action(message: Message, state: FSMContext):
         
     except Exception as e:
         await message.answer(f"❌ Xatolik: {e}")
+
+@router.message(F.text == BUTTONS["user"]["history"])
+async def show_history(message: Message):
+    files = get_user_files_history(message.from_user.id)
+    
+    if not files:
+        await message.answer(USER_TEXTS["no_history"])
+        return
+
+    from aiogram.utils.keyboard import InlineKeyboardBuilder
+    from aiogram.types import InlineKeyboardButton
+    
+    builder = InlineKeyboardBuilder()
+    for file_id, filename, _, timestamp in files:
+        # Show filename and date
+        date_str = datetime.strptime(timestamp, "%Y-%m-%d %H:%M:%S").strftime("%d.%m %H:%M")
+        builder.row(InlineKeyboardButton(
+            text=f"📄 {filename} ({date_str})", 
+            callback_data=f"hist_{file_id}"
+        ))
+    
+    await message.answer(USER_TEXTS["history_welcome"], reply_markup=builder.as_markup())
+
+@router.callback_query(F.data.startswith("hist_"))
+async def process_history_select(callback: CallbackQuery, state: FSMContext):
+    file_id = int(callback.data.replace("hist_", ""))
+    
+    # Get file path from DB
+    import sqlite3
+    from bot.services.database import DB_NAME
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT storage_path, filename FROM files_log WHERE id = ?", (file_id,))
+    row = cursor.fetchone()
+    conn.close()
+    
+    if not row or not os.path.exists(row[0]):
+        await callback.answer("❌ Fayl serverdan o'chirilgan yoki topilmadi.", show_alert=True)
+        return
+        
+    perma_path, filename = row
+    
+    # Store in state
+    await state.update_data(file_path=perma_path, original_filename=filename)
+    await state.set_state(ValidatedFileState.waiting_for_action)
+    
+    await callback.message.answer(
+        f"📂 **{filename}** tanlandi.\n\nEndi kerakli amalni tanlang:",
+        reply_markup=get_main_keyboard(),
+        parse_mode="Markdown"
+    )
+    await callback.answer()

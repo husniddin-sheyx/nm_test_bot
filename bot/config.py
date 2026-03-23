@@ -12,3 +12,7 @@ if not BOT_TOKEN:
 # Temporary directory for file processing
 TEMP_DIR = os.path.join(os.getcwd(), "temp_files")
 os.makedirs(TEMP_DIR, exist_ok=True)
+
+# Permanent storage for user history
+UPLOADS_DIR = os.path.join(os.getcwd(), "uploads")
+os.makedirs(UPLOADS_DIR, exist_ok=True)

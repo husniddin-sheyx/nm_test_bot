@@ -20,6 +20,7 @@ def get_start_keyboard(is_admin: bool = False):
     builder = ReplyKeyboardBuilder()
     builder.row(
         KeyboardButton(text=BUTTONS["user"]["instructions_btn"]),
+        KeyboardButton(text=BUTTONS["user"]["history"]),
         KeyboardButton(text=BUTTONS["user"]["settings_btn"])
     )
     if is_admin:

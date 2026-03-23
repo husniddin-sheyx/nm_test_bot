@@ -31,6 +31,15 @@ def init_db():
             PRIMARY KEY (user_id, key)
         )
     """)
+    # New table for file statistics
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS files_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            filename TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
     conn.commit()
     conn.close()
     logging.info("Database initialized.")
@@ -128,3 +137,62 @@ def get_user_setting(user_id: int, key: str, default: str = None) -> str:
     result = cursor.fetchone()
     conn.close()
     return result[0] if result else default
+
+def log_file_upload(user_id: int, filename: str, storage_path: str = None):
+    """Logs a file upload event with optional storage path."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "INSERT INTO files_log (user_id, filename, storage_path) VALUES (?, ?, ?)", 
+            (user_id, filename, storage_path)
+        )
+        conn.commit()
+    except Exception as e:
+        # Check if storage_path column exists, if not, add it (simple migration)
+        if "no such column: storage_path" in str(e).lower():
+            cursor.execute("ALTER TABLE files_log ADD COLUMN storage_path TEXT")
+            cursor.execute(
+                "INSERT INTO files_log (user_id, filename, storage_path) VALUES (?, ?, ?)", 
+                (user_id, filename, storage_path)
+            )
+            conn.commit()
+        else:
+            logging.error(f"Error logging file: {e}")
+    finally:
+        conn.close()
+
+def get_user_files_history(user_id: int, limit: int = 5):
+    """Returns the last N files uploaded by a user."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, filename, storage_path, timestamp FROM files_log "
+        "WHERE user_id = ? AND storage_path IS NOT NULL "
+        "ORDER BY timestamp DESC LIMIT ?", 
+        (user_id, limit)
+    )
+    files = cursor.fetchall()
+    conn.close()
+    return files
+
+def get_total_files_count() -> int:
+    """Returns total number of files processed."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute("SELECT COUNT(*) FROM files_log")
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
+
+def get_files_count_period(days: int = 1) -> int:
+    """Returns number of files processed in the last N days."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM files_log WHERE timestamp >= datetime('now', ?)", 
+        (f'-{days} days',)
+    )
+    count = cursor.fetchone()[0]
+    conn.close()
+    return count
