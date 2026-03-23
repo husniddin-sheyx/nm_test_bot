@@ -132,7 +132,6 @@ LEXICON = {
 ERROR_TEXTS = {
     "no_questions": "❗ Faylda savollar topilmadi.",
     "missing_plus": "❗ {id}-savol: To'g'ri javob (+) belgilanmagan.",
-    "multiple_plus": "❗ {id}-savol: {count} ta to'g'ri javob (+) belgilangan.",
     "few_answers": "❗ {id}-savol: Javoblar soni kam.",
     "orphan_image": "❗ {id}-qator: Rasm yoki formula savolga tegishli emas.",
     "duplicate_question": "⚠️ {id}-savol: Takroriy savol.",

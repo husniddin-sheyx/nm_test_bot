@@ -30,8 +30,6 @@ class Validator:
             
             if correct_count == 0:
                 q_errors.append(ERROR_TEXTS["missing_plus"].format(id=q.id))
-            elif correct_count > 1:
-                q_errors.append(ERROR_TEXTS["multiple_plus"].format(id=q.id, count=correct_count))
             
             # --- 2. Duplicate Detection ---
             
