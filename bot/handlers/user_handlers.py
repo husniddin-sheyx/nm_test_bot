@@ -6,7 +6,7 @@ from aiogram.types import Message, CallbackQuery, FSInputFile
 from aiogram.filters import Command, CommandStart, StateFilter
 from aiogram.fsm.context import FSMContext
 
-from bot.config import TEMP_DIR, UPLOADS_DIR
+from bot.config import TEMP_DIR, UPLOADS_DIR, ADMIN_IDS
 from bot.utils.lexicon import LEXICON, ERROR_TEXTS
 from bot.services.database import (
     add_user, 
@@ -22,7 +22,8 @@ from bot.keyboards.user_kb import (
     get_language_keyboard, 
     get_main_keyboard, 
     get_settings_keyboard,
-    get_action_keyboard
+    get_action_keyboard,
+    get_start_keyboard
 )
 from bot.services.parser import DocxParser
 from bot.services.validator import Validator
@@ -39,9 +40,10 @@ async def cmd_start(message: Message, state: FSMContext):
     await state.clear()
     add_user(message.from_user.id, message.from_user.full_name, message.from_user.username)
     lang = get_user_language(message.from_user.id)
+    is_admin = message.from_user.id in ADMIN_IDS
     await message.answer(
         LEXICON[lang]["user"]["welcome"],
-        reply_markup=get_main_keyboard(lang=lang)
+        reply_markup=get_start_keyboard(lang=lang, is_admin=is_admin)
     )
 
 @router.message(F.text.in_([LEXICON[l]["buttons"]["instructions_btn"] for l in LEXICON]))
@@ -53,6 +55,13 @@ async def show_settings(message: Message, lang: str):
     await message.answer(
         LEXICON[lang]["user"]["settings_welcome"],
         reply_markup=get_settings_keyboard(lang=lang)
+    )
+
+@router.message(F.text.in_([LEXICON[l]["buttons"]["lang"] for l in LEXICON]))
+async def handle_language_selection(message: Message, lang: str):
+    await message.answer(
+        LEXICON[lang]["user"]["lang_select"],
+        reply_markup=get_language_keyboard()
     )
 
 @router.callback_query(F.data == "set_lang")

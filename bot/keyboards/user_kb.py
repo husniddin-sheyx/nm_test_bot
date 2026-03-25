@@ -24,7 +24,8 @@ def get_start_keyboard(lang: str = "uz", is_admin: bool = False):
     builder.row(
         KeyboardButton(text=buttons["instructions_btn"]),
         KeyboardButton(text=buttons["history"]),
-        KeyboardButton(text=buttons["settings_btn"])
+        KeyboardButton(text=buttons["settings_btn"]),
+        KeyboardButton(text=buttons["lang"])
     )
     if is_admin:
         builder.row(KeyboardButton(text=buttons["admin_panel"]))
@@ -38,7 +39,7 @@ def get_settings_keyboard(lang: str = "uz"):
     
     return builder.as_markup()
 
-def get_lang_selection_keyboard():
+def get_language_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
         InlineKeyboardButton(text="🇺🇿 O'zbek", callback_data="set_lang_uz"),
