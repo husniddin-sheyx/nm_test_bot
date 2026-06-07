@@ -218,6 +218,18 @@ def get_user_files_history(user_id: int, limit: int = 5):
     conn.close()
     return files
 
+def get_file_by_id(file_id: int):
+    """Returns a single file record by its ID."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, filename, storage_path, timestamp FROM files_log WHERE id = ?",
+        (file_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
 def get_total_files_count() -> int:
     """Returns total number of files processed."""
     conn = sqlite3.connect(DB_NAME)
@@ -238,3 +250,16 @@ def get_files_count_period(days: int = 1) -> int:
     count = cursor.fetchone()[0]
     conn.close()
     return count
+
+def get_file_by_id(file_id: int) -> Tuple:
+    """Returns the file details (user_id, filename, storage_path, timestamp) for a given file ID."""
+    conn = sqlite3.connect(DB_NAME)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT user_id, filename, storage_path, timestamp FROM files_log WHERE id = ?",
+        (file_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return result
+
