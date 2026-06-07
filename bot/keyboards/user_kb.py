@@ -39,6 +39,9 @@ def get_settings_keyboard(lang: str = "uz"):
     
     return builder.as_markup()
 
+def get_action_keyboard(lang: str = "uz") -> ReplyKeyboardMarkup:
+    return get_main_keyboard(lang=lang)
+
 def get_language_keyboard():
     builder = InlineKeyboardBuilder()
     builder.row(
