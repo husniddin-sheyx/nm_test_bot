@@ -48,6 +48,11 @@ def init_db():
             timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    # Migration: Add storage_path column if missing
+    try:
+        cursor.execute("ALTER TABLE files_log ADD COLUMN storage_path TEXT")
+    except sqlite3.OperationalError:
+        pass
     conn.commit()
     conn.close()
     logging.info("Database initialized.")
