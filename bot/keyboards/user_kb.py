@@ -23,7 +23,9 @@ def get_start_keyboard(lang: str = "uz", is_admin: bool = False):
     
     builder.row(
         KeyboardButton(text=buttons["instructions_btn"]),
-        KeyboardButton(text=buttons["history"]),
+        KeyboardButton(text=buttons["history"])
+    )
+    builder.row(
         KeyboardButton(text=buttons["settings_btn"]),
         KeyboardButton(text=buttons["lang"])
     )
@@ -35,18 +37,24 @@ def get_settings_keyboard(lang: str = "uz"):
     builder = InlineKeyboardBuilder()
     buttons = LEXICON[lang]["buttons"]
     
-    builder.row(InlineKeyboardButton(text=buttons["lang"], callback_data="change_lang"))
+    builder.row(InlineKeyboardButton(text=buttons["lang"], callback_data="set_lang"))
     
     return builder.as_markup()
 
 def get_action_keyboard(lang: str = "uz") -> ReplyKeyboardMarkup:
     return get_main_keyboard(lang=lang)
 
-def get_language_keyboard():
+def get_language_keyboard(lang: str = "uz"):
     builder = InlineKeyboardBuilder()
     builder.row(
-        InlineKeyboardButton(text="🇺🇿 O'zbek", callback_data="set_lang_uz"),
-        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="set_lang_ru"),
-        InlineKeyboardButton(text="🇺🇸 English", callback_data="set_lang_en")
+        InlineKeyboardButton(text="🇺🇿 O'zbek", callback_data="lang_uz"),
+        InlineKeyboardButton(text="🇷🇺 Русский", callback_data="lang_ru"),
+        InlineKeyboardButton(text="🇺🇸 English", callback_data="lang_en")
     )
+    
+    back_text = LEXICON[lang]["buttons"]["back"]
+    builder.row(
+        InlineKeyboardButton(text=back_text, callback_data="settings_back")
+    )
+    
     return builder.as_markup()
