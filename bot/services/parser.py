@@ -3,6 +3,14 @@ from docx import Document
 import openpyxl
 from bot.structure import QuestionBlock, AnswerBlock
 
+def paragraph_has_image(para) -> bool:
+    if not hasattr(para, '_element') or para._element is None:
+        return False
+    p_element = para._element
+    if p_element.xpath('.//w:drawing') or p_element.xpath('.//w:pict'):
+        return True
+    return False
+
 class DocxParser:
     def __init__(self, file_path: str):
         self.doc = Document(file_path)
@@ -45,30 +53,73 @@ class DocxParser:
                 current_q_paragraphs.clear()
                 current_answers.clear()
 
-        for para in self.doc.paragraphs:
-            text = para.text.strip()
-            if not text:
-                continue
-            
-            # 1. Identify Markers
-            is_question = text.startswith("?")
-            is_plus_equal = text.startswith("+") or text.startswith("=")
-            is_minus = text.startswith("-")
-            
-            if is_question:
-                save_current_question()
-                current_q_paragraphs.append(para)
-            elif is_plus_equal or is_minus:
-                save_current_answer()
-                current_ans_is_correct = is_plus_equal
-                current_ans_paragraphs.append(para)
-            else:
-                # Continuation of current block
-                if current_ans_paragraphs:
-                    current_ans_paragraphs.append(para)
-                elif current_q_paragraphs:
+        from docx.oxml.ns import qn
+
+        def iter_body_items(doc):
+            """Yields paragraphs and tables in document order."""
+            body = doc.element.body
+            for child in body:
+                if child.tag == qn('w:p'):
+                    from docx.text.paragraph import Paragraph
+                    yield 'para', Paragraph(child, doc)
+                elif child.tag == qn('w:tbl'):
+                    from docx.table import Table
+                    yield 'table', Table(child, doc)
+
+        for item_type, item in iter_body_items(self.doc):
+            if item_type == 'para':
+                para = item
+                text = para.text.strip()
+                has_img = paragraph_has_image(para)
+                if not text and not has_img:
+                    continue
+
+                is_question = text.startswith("?")
+                is_plus_equal = text.startswith("+") or text.startswith("=")
+                is_minus = text.startswith("-")
+
+                if is_question:
+                    save_current_question()
                     current_q_paragraphs.append(para)
-        
+                elif is_plus_equal or is_minus:
+                    save_current_answer()
+                    current_ans_is_correct = is_plus_equal
+                    current_ans_paragraphs.append(para)
+                else:
+                    if current_ans_paragraphs:
+                        current_ans_paragraphs.append(para)
+                    elif current_q_paragraphs:
+                        current_q_paragraphs.append(para)
+                    else:
+                        if has_img:
+                            self.blocks.append(QuestionBlock(
+                                id=0,
+                                question_paragraphs=[para],
+                                answers=[]
+                            ))
+            elif item_type == 'table':
+                # Table - joriy blokka qo'shamiz (savol yoki javob davomi sifatida)
+                table = item
+                # Jadval paragraflarini bir obyekt sifatida saqlaymiz
+                class TablePara:
+                    """Jadvalni paragraph sifatida ifodalovchi wrapper."""
+                    def __init__(self, tbl):
+                        self._element = tbl._element
+                        # Jadval ichidagi barcha matnni birlashtirish
+                        self.text = " | ".join(
+                            cell.text.strip()
+                            for row in tbl.rows
+                            for cell in row.cells
+                            if cell.text.strip()
+                        )
+                        self._is_table = True
+
+                table_para = TablePara(table)
+                if current_ans_paragraphs:
+                    current_ans_paragraphs.append(table_para)
+                elif current_q_paragraphs:
+                    current_q_paragraphs.append(table_para)
+
         # Save last block
         save_current_question()
             
